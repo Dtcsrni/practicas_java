@@ -1,0 +1,10 @@
+{
+  "java.server.launchMode": "Standard",
+  "java.configuration.runtimes": [
+    {
+      "name": "JavaSE-26",
+      "path": "C:\\OpenJDK\\jdk-26",
+      "default": true
+    }
+  ]
+}
