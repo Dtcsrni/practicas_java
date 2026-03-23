@@ -16,5 +16,6 @@ public class VentanaJuego extends JFrame {
         setLocationRelativeTo(null);
         //Hace visible la ventana
         setVisible(true);
+        panel.requestFocus();
     }
 }
