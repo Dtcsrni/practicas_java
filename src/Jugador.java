@@ -1,5 +1,6 @@
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Rectangle;
 
 public class Jugador {
     //Atributos privados encapsulados
@@ -32,6 +33,9 @@ public class Jugador {
         //Marca frontal para distinguir orientacion
         g.setColor(Color.RED);
         g.fillRect(x+10, y + 4, 8, 4);
+    }
+    public Rectangle getBounds(){
+        return new Rectangle(x, y, ancho, alto);
     }
 
     //Getters y setters para acceder y modificar los atributos de forma controlada

@@ -18,6 +18,7 @@ public class PanelJuego extends JPanel implements KeyListener, ActionListener {
     public static final int ALTO = 320;
     // El panel tiene un jugador. Objeto jugador
     private Jugador jugador;
+    private Moneda moneda; // Para mostrar como se pueden agregar mas objetos al juego
     // Timer de swing para actualizar el juego periódicamente
     private Timer timer;
     // variables booleanas para saber qué teclas estan presionadas
@@ -25,6 +26,11 @@ public class PanelJuego extends JPanel implements KeyListener, ActionListener {
     private boolean abajo;
     private boolean izquierda;
     private boolean derecha;
+
+    // Variables de progreso del juego
+    private int puntos;
+    private int meta;
+    private boolean juegoGanado;
 
     // Constructor que define las caracteristicas del panel
     public PanelJuego() {
@@ -38,6 +44,15 @@ public class PanelJuego extends JPanel implements KeyListener, ActionListener {
         addKeyListener(this);
         // Creamos al jugador con una posicion inicial
         jugador = new Jugador(100, 100, 30, 30, 5);
+
+        // Crear la moneda
+        moneda = new Moneda(ANCHO, ALTO, 20);
+
+        // Inicializamos variables de puntaje
+        puntos = 0;
+        meta = 5;
+        juegoGanado = false;
+
         // Creamos un timer que se ejecuta cada 16 ms aprox (60FPS)
         timer = new Timer(16, this);
         timer.start();
@@ -72,6 +87,18 @@ public class PanelJuego extends JPanel implements KeyListener, ActionListener {
         if (jugador.getY() + jugador.getAlto() > ALTO) {
             jugador.setY(ALTO - jugador.getAlto());
         }
+
+        // Detectar colisión con la moneda
+        if(jugador.getBounds().intersects(moneda.getBounds())) {
+            puntos++;
+            moneda.reposicionar(ANCHO, ALTO);
+        }
+
+        // Detectar condición de victoria
+        if(puntos >= meta) {
+            juegoGanado = true;
+            timer.stop(); // Detener el juego
+        }
     }
 
     @Override
@@ -90,6 +117,13 @@ public class PanelJuego extends JPanel implements KeyListener, ActionListener {
         }
         //Dibujamos al jugador mediante su propio método
         jugador.dibujar(g);
+        moneda.dibujar(g);
+
+        if(juegoGanado)
+        {
+            g.setColor(Color.WHITE);
+            g.drawString("¡Has ganado!", ANCHO/2 - 30, ALTO/2);
+        }
         //Texto de apoyo
         g.setColor(Color.WHITE);
         g.drawString("Mover W A S D o flechas", 20, 20);

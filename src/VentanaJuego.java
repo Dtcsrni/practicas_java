@@ -2,7 +2,7 @@ import javax.swing.JFrame;
 public class VentanaJuego extends JFrame {
     public VentanaJuego(){
         //Definicion de caracteristicas de la ventana
-        setTitle("Proyecto Juego -Base Grafica");
+        setTitle("Proyecto Juego ");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         //Impide redimensionar la ventana manualmente
         setResizable(false);
