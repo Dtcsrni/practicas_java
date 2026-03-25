@@ -9,10 +9,20 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.security.Key;
+import java.util.ArrayList;
 
 import javax.swing.Timer;
 
 public class PanelJuego extends JPanel implements KeyListener, ActionListener {
+    private ArrayList<Obstaculo> obstaculos;
+    private MonedaEspecial monedaEspecial;
+    private Turbo turbo;
+
+    private int tiempoRestante;
+    private boolean juegoPerdido;
+    private int framesMonedaEspecial;
+    private int framesTurbo;
+
     // Constantes del panel
     public static final int ANCHO = 640;
     public static final int ALTO = 320;
@@ -31,6 +41,23 @@ public class PanelJuego extends JPanel implements KeyListener, ActionListener {
     private int puntos;
     private int meta;
     private boolean juegoGanado;
+
+    private void inicializarObstaculos(){
+
+    }
+    private void actualizarEfectosTemporales(){
+
+    }
+    private void verificarColisiones(){
+
+    }
+    private boolean colisionaConObstaculo(EntidadJuego entidad){
+
+    }
+    private void dibujarHUD(Graphics g){
+
+    }
+
 
     // Constructor que define las caracteristicas del panel
     public PanelJuego() {
@@ -89,13 +116,13 @@ public class PanelJuego extends JPanel implements KeyListener, ActionListener {
         }
 
         // Detectar colisión con la moneda
-        if(jugador.getBounds().intersects(moneda.getBounds())) {
+        if (jugador.getBounds().intersects(moneda.getBounds())) {
             puntos++;
             moneda.reposicionar(ANCHO, ALTO);
         }
 
         // Detectar condición de victoria
-        if(puntos >= meta) {
+        if (puntos >= meta) {
             juegoGanado = true;
             timer.stop(); // Detener el juego
         }
@@ -104,27 +131,26 @@ public class PanelJuego extends JPanel implements KeyListener, ActionListener {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        //Dibujamos un fondo sencillo tipo cancha
+        // Dibujamos un fondo sencillo tipo cancha
         g.setColor(new Color(0, 255, 0));
-        g.fillRect(0,0, ANCHO, ALTO);
-        //Dibujamos líneas de referencia para que el movimiento se note mejor
+        g.fillRect(0, 0, ANCHO, ALTO);
+        // Dibujamos líneas de referencia para que el movimiento se note mejor
         g.setColor(new Color(50, 150, 50));
-        for(int i = 0; i < ANCHO; i+=40){
+        for (int i = 0; i < ANCHO; i += 40) {
             g.drawLine(i, 0, i, ALTO);
         }
-        for(int i = 0; i < ALTO; i+=40){
+        for (int i = 0; i < ALTO; i += 40) {
             g.drawLine(0, i, ANCHO, i);
         }
-        //Dibujamos al jugador mediante su propio método
+        // Dibujamos al jugador mediante su propio método
         jugador.dibujar(g);
         moneda.dibujar(g);
 
-        if(juegoGanado)
-        {
+        if (juegoGanado) {
             g.setColor(Color.WHITE);
-            g.drawString("¡Has ganado!", ANCHO/2 - 30, ALTO/2);
+            g.drawString("¡Has ganado!", ANCHO / 2 - 30, ALTO / 2);
         }
-        //Texto de apoyo
+        // Texto de apoyo
         g.setColor(Color.WHITE);
         g.drawString("Mover W A S D o flechas", 20, 20);
         g.drawString("Sesion mínima usable con POO", 20, 40);
