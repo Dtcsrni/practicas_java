@@ -17,11 +17,11 @@ public class PanelJuego extends JPanel implements KeyListener, ActionListener {
     private ArrayList<Obstaculo> obstaculos;
     private MonedaEspecial monedaEspecial;
     private Turbo turbo;
-
     private int tiempoRestante;
     private boolean juegoPerdido;
     private int framesMonedaEspecial;
     private int framesTurbo;
+    public static final int FPS = 60;
 
     // Constantes del panel
     public static final int ANCHO = 640;
@@ -41,8 +41,18 @@ public class PanelJuego extends JPanel implements KeyListener, ActionListener {
     private int puntos;
     private int meta;
     private boolean juegoGanado;
+    private int contadorFramesTiempo;
+    private int contadorAparicionMonedaEspecial;
+    private int contadorAparicionTurbo;
 
     private void inicializarObstaculos(){
+        obstaculos = new ArrayList<>();
+        // Agregar algunos obstáculos de ejemplo
+        obstaculos.add(new Obstaculo(200, 150, 50, 50));
+        obstaculos.add(new Obstaculo(400, 100, 60, 60));
+        obstaculos.add(new Obstaculo(300, 250, 40, 40));
+        obstaculos.add(new Obstaculo(500, 200, 70, 70));
+        obstaculos.add(new Obstaculo(150, 50, 30, 30));
 
     }
     private void actualizarEfectosTemporales(){
@@ -74,19 +84,38 @@ public class PanelJuego extends JPanel implements KeyListener, ActionListener {
 
         // Crear la moneda
         moneda = new Moneda(ANCHO, ALTO, 20);
-
+        monedaEspecial = new MonedaEspecial(22);
+        turbo = new Turbo();
+        obstaculos = new ArrayList<>();
+        inicializarObstaculos();
         // Inicializamos variables de puntaje
         puntos = 0;
         meta = 5;
         juegoGanado = false;
+        juegoPerdido = false;
+        tiempoRestante = 40;
+        contadorFramesTiempo = 0;
+        contadorAparicionMonedaEspecial = 0;
+        contadorAparicionTurbo = 0;
+        recolocarEntidad(moneda);
 
         // Creamos un timer que se ejecuta cada 16 ms aprox (60FPS)
-        timer = new Timer(16, this);
+        timer = new Timer(1000/FPS, this);
         timer.start();
     }
 
     // Método que actualiza el estado del juego
     public void actualizar() {
+    if(juegoGanado || juegoPerdido){
+        return;  }
+        moverJugadorConColisiones();
+        jugador.actualizarEstado();
+        actualizarTiempo();
+        actualizarApariciones();
+        monedaEspecial.actualizar();
+        verificarColisionesConRecolectables();
+        verificarFinDelJuego();
+
         // Movimiento vertical
         if (arriba) {
             jugador.mover(0, -jugador.getVelocidad());
