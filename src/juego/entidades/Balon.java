@@ -15,14 +15,17 @@ public class Balon extends EntidadJuego {
     private double altura;
     private double velocidadZ;
 
-    private static final double FRICCION = 0.988;
-    private static final double VELOCIDAD_MINIMA = 0.03;
-    private static final double REBOTE = 0.78;
+    private static final double FRICCION_SUELO = 0.978;
+    private static final double FRICCION_AIRE = 0.994;
+    private static final double VELOCIDAD_MINIMA = 0.025;
+    private static final double REBOTE = 0.74;
     private static final double VELOCIDAD_MAXIMA = 9.5;
     private static final double GRAVEDAD = 0.36;
-    private static final double REBOTE_VERTICAL = 0.54;
+    private static final double REBOTE_VERTICAL = 0.52;
     private static final double VELOCIDAD_VERTICAL_MINIMA = 0.18;
     private static final double VELOCIDAD_VERTICAL_MAXIMA = 11.5;
+    private static final double RESISTENCIA_RODADO = 0.010;
+    private static final double ACOPLE_REBOTE_HORIZONTAL = 0.05;
     private double anguloAnimacion;
 
     public Balon(int x, int y, int tamano) {
@@ -58,19 +61,63 @@ public class Balon extends EntidadJuego {
         velocidadX += impulsoX;
         velocidadY += impulsoY;
         velocidadZ += impulsoZ;
+        anguloAnimacion += (impulsoX - impulsoY) * 0.08;
         limitarVelocidad();
     }
 
     public void actualizarFisica(int anchoPanel, int altoPanel) {
         // Integra movimiento horizontal y altura del balon.
+        velocidadZ -= GRAVEDAD;
         posX += velocidadX;
         posY += velocidadY;
         altura += velocidadZ;
-        velocidadZ -= GRAVEDAD;
 
-        // La friccion va apagando el desplazamiento sobre el pasto.
-        velocidadX *= FRICCION;
-        velocidadY *= FRICCION;
+        boolean enAire = altura > 0.0 || Math.abs(velocidadZ) > VELOCIDAD_VERTICAL_MINIMA;
+        double factorFriccion = enAire ? FRICCION_AIRE : FRICCION_SUELO;
+        velocidadX *= factorFriccion;
+        velocidadY *= factorFriccion;
+
+        // La pelota pierde impulso extra al rodar sobre el cesped.
+        if (!enAire) {
+            aplicarResistenciaRodado();
+        }
+
+        if (altura < 0.0) {
+            altura = 0.0;
+            // Cuando toca piso, parte de la energia vertical se conserva como rebote.
+            if (Math.abs(velocidadZ) > VELOCIDAD_VERTICAL_MINIMA) {
+                double impacto = Math.abs(velocidadZ);
+                velocidadZ = impacto * REBOTE_VERTICAL;
+                // Pequeño acople para que los rebotes cambien levemente la trayectoria.
+                velocidadX += (velocidadX >= 0 ? 1 : -1) * impacto * ACOPLE_REBOTE_HORIZONTAL;
+                velocidadY += (velocidadY >= 0 ? 1 : -1) * impacto * ACOPLE_REBOTE_HORIZONTAL;
+            } else {
+                velocidadZ = 0.0;
+            }
+        }
+
+        // Rebota contra los bordes externos del panel con perdida adicional por choque.
+        if (posX < 0) {
+            posX = 0;
+            velocidadX = -velocidadX * REBOTE;
+            velocidadY *= 0.94;
+        }
+        if (posY < 0) {
+            posY = 0;
+            velocidadY = -velocidadY * REBOTE;
+            velocidadX *= 0.94;
+        }
+        if (posX + ancho > anchoPanel) {
+            posX = anchoPanel - ancho;
+            velocidadX = -velocidadX * REBOTE;
+            velocidadY *= 0.94;
+        }
+        if (posY + alto > altoPanel) {
+            posY = altoPanel - alto;
+            velocidadY = -velocidadY * REBOTE;
+            velocidadX *= 0.94;
+        }
+
         if (Math.abs(velocidadX) < VELOCIDAD_MINIMA) {
             velocidadX = 0.0;
         }
@@ -80,37 +127,24 @@ public class Balon extends EntidadJuego {
         if (altura <= 0.0 && Math.abs(velocidadZ) < VELOCIDAD_VERTICAL_MINIMA) {
             velocidadZ = 0.0;
         }
-        anguloAnimacion += (Math.abs(velocidadX) + Math.abs(velocidadY)) * 0.18;
 
-        if (altura < 0.0) {
-            altura = 0.0;
-            // Cuando toca piso, parte de la energia vertical se conserva como rebote.
-            if (Math.abs(velocidadZ) > VELOCIDAD_VERTICAL_MINIMA) {
-                velocidadZ = -velocidadZ * REBOTE_VERTICAL;
-            } else {
-                velocidadZ = 0.0;
-            }
-        }
-
-        // Rebota contra los bordes externos del panel.
-        if (posX < 0) {
-            posX = 0;
-            velocidadX = -velocidadX * REBOTE;
-        }
-        if (posY < 0) {
-            posY = 0;
-            velocidadY = -velocidadY * REBOTE;
-        }
-        if (posX + ancho > anchoPanel) {
-            posX = anchoPanel - ancho;
-            velocidadX = -velocidadX * REBOTE;
-        }
-        if (posY + alto > altoPanel) {
-            posY = altoPanel - alto;
-            velocidadY = -velocidadY * REBOTE;
-        }
+        anguloAnimacion += (Math.abs(velocidadX) + Math.abs(velocidadY)) * (enAire ? 0.11 : 0.18);
+        limitarVelocidad();
 
         sincronizarPosicionEntera();
+    }
+
+    private void aplicarResistenciaRodado() {
+        if (velocidadX > 0) {
+            velocidadX = Math.max(0.0, velocidadX - RESISTENCIA_RODADO);
+        } else if (velocidadX < 0) {
+            velocidadX = Math.min(0.0, velocidadX + RESISTENCIA_RODADO);
+        }
+        if (velocidadY > 0) {
+            velocidadY = Math.max(0.0, velocidadY - RESISTENCIA_RODADO);
+        } else if (velocidadY < 0) {
+            velocidadY = Math.min(0.0, velocidadY + RESISTENCIA_RODADO);
+        }
     }
 
     public void setPosicion(double nuevaX, double nuevaY) {

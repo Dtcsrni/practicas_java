@@ -7,6 +7,7 @@ public enum EventoJuego {
     GOL_RIVAL,
     FALTA_A_FAVOR,
     FALTA_EN_CONTRA,
+    EMPATE,
     VICTORIA,
     DERROTA
 }

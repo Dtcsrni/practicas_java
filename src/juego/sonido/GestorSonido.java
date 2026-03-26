@@ -118,25 +118,19 @@ public class GestorSonido {
 
     private void reproducirSilbatazo(double frecuenciaInicio, double frecuenciaFin, int duracionMs, double volumen)
         throws LineUnavailableException {
-        AudioFormat formato = new AudioFormat(SAMPLE_RATE, 16, 1, true, false);
-        try (SourceDataLine linea = AudioSystem.getSourceDataLine(formato)) {
-            linea.open(formato, 4096);
-            linea.start();
+        // Reutiliza la misma rutina de apertura/cierre de linea de audio.
+        tryConLineaAudio(linea -> {
             escribirSilbatazo(linea, frecuenciaInicio, frecuenciaFin, duracionMs, volumen);
-            linea.drain();
-        }
+        });
     }
 
     private void reproducirSecuencia(Nota[] notas) throws LineUnavailableException {
-        AudioFormat formato = new AudioFormat(SAMPLE_RATE, 16, 1, true, false);
-        try (SourceDataLine linea = AudioSystem.getSourceDataLine(formato)) {
-            linea.open(formato, 4096);
-            linea.start();
+        // Reproduce una secuencia de notas cortas en la misma linea de audio.
+        tryConLineaAudio(linea -> {
             for (Nota nota : notas) {
                 escribirNota(linea, nota);
             }
-            linea.drain();
-        }
+        });
     }
 
     private void escribirNota(SourceDataLine linea, Nota nota) {
@@ -191,6 +185,23 @@ public class GestorSonido {
             return Math.max(0.0, (1.0 - progreso) / 0.16);
         }
         return 1.0;
+    }
+
+    private void tryConLineaAudio(AccionLineaAudio accion) throws LineUnavailableException {
+        // Centraliza setup/teardown para evitar duplicar codigo de audio.
+        AudioFormat formato = new AudioFormat(SAMPLE_RATE, 16, 1, true, false);
+        try (SourceDataLine linea = AudioSystem.getSourceDataLine(formato)) {
+            linea.open(formato, 4096);
+            linea.start();
+            accion.ejecutar(linea);
+            linea.drain();
+        }
+    }
+
+    @FunctionalInterface
+    private interface AccionLineaAudio {
+        // Contrato minimo para escribir audio sobre la linea abierta.
+        void ejecutar(SourceDataLine linea);
     }
 
     private record Nota(double frecuencia, int duracionMs, double volumen) {

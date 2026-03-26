@@ -4,7 +4,7 @@ import java.awt.event.KeyEvent;
 
 // Traduce teclado crudo a intenciones de movimiento, pase y tiro.
 public class EntradaJuego {
-    private static final long CARGA_MAX_NS = 1_200_000_000L;
+    private static final long PERIODO_BARRA_NS = 1_100_000_000L;
     private static final double FACTOR_MIN_CARGA = 0.35;
     private static final double FACTOR_MAX_CARGA = 1.00;
 
@@ -27,19 +27,8 @@ public class EntradaJuego {
     private int ultimaDireccionY = 0;
 
     public void procesarPresion(int codigoTecla) {
-        // Marca direcciones activas.
-        if (codigoTecla == KeyEvent.VK_W || codigoTecla == KeyEvent.VK_UP) {
-            arriba = true;
-        }
-        if (codigoTecla == KeyEvent.VK_S || codigoTecla == KeyEvent.VK_DOWN) {
-            abajo = true;
-        }
-        if (codigoTecla == KeyEvent.VK_A || codigoTecla == KeyEvent.VK_LEFT) {
-            izquierda = true;
-        }
-        if (codigoTecla == KeyEvent.VK_D || codigoTecla == KeyEvent.VK_RIGHT) {
-            derecha = true;
-        }
+        // Actualiza banderas de movimiento segun la tecla presionada.
+        actualizarEstadoMovimiento(codigoTecla, true);
         if (codigoTecla == KeyEvent.VK_SHIFT) {
             correr = true;
         }
@@ -57,19 +46,8 @@ public class EntradaJuego {
     }
 
     public void procesarLiberacion(int codigoTecla) {
-        // Libera direcciones activas.
-        if (codigoTecla == KeyEvent.VK_W || codigoTecla == KeyEvent.VK_UP) {
-            arriba = false;
-        }
-        if (codigoTecla == KeyEvent.VK_S || codigoTecla == KeyEvent.VK_DOWN) {
-            abajo = false;
-        }
-        if (codigoTecla == KeyEvent.VK_A || codigoTecla == KeyEvent.VK_LEFT) {
-            izquierda = false;
-        }
-        if (codigoTecla == KeyEvent.VK_D || codigoTecla == KeyEvent.VK_RIGHT) {
-            derecha = false;
-        }
+        // Libera banderas de movimiento al soltar la tecla.
+        actualizarEstadoMovimiento(codigoTecla, false);
         if (codigoTecla == KeyEvent.VK_SHIFT) {
             correr = false;
         }
@@ -79,12 +57,12 @@ public class EntradaJuego {
         if (codigoTecla == KeyEvent.VK_SPACE && pasePresionado) {
             pasePresionado = false;
             pasePendiente = true;
-            factorPasePendiente = calcularFactorCarga(inicioCargaPaseNs);
+            factorPasePendiente = calcularFactorBarra(inicioCargaPaseNs);
         }
         if (codigoTecla == KeyEvent.VK_X && tiroPresionado) {
             tiroPresionado = false;
             tiroPendiente = true;
-            factorTiroPendiente = calcularFactorCarga(inicioCargaTiroNs);
+            factorTiroPendiente = calcularFactorBarra(inicioCargaTiroNs);
         }
     }
 
@@ -181,29 +159,90 @@ public class EntradaJuego {
         return correr;
     }
 
+    public boolean estaCargandoPase() {
+        return pasePresionado;
+    }
+
+    public boolean estaCargandoTiro() {
+        return tiroPresionado;
+    }
+
+    public double getFactorCargaPaseActual() {
+        return pasePresionado ? calcularFactorBarra(inicioCargaPaseNs) : 0.0;
+    }
+
+    public double getFactorCargaTiroActual() {
+        return tiroPresionado ? calcularFactorBarra(inicioCargaTiroNs) : 0.0;
+    }
+
+    public String getEtiquetaCargaActiva() {
+        if (tiroPresionado) {
+            return "TIRO";
+        }
+        if (pasePresionado) {
+            return "PASE";
+        }
+        return "";
+    }
+
+    public double getFactorCargaActiva() {
+        if (tiroPresionado) {
+            return getFactorCargaTiroActual();
+        }
+        if (pasePresionado) {
+            return getFactorCargaPaseActual();
+        }
+        return 0.0;
+    }
+
     private int direccionActualX() {
-        int dx = 0;
-        if (izquierda) {
-            dx -= 1;
-        }
-        if (derecha) {
-            dx += 1;
-        }
-        return dx;
+        // Direccion horizontal normalizada: -1 izquierda, 0 quieto, 1 derecha.
+        return (izquierda ? -1 : 0) + (derecha ? 1 : 0);
     }
 
     private int direccionActualY() {
-        int dy = 0;
-        if (arriba) {
-            dy -= 1;
+        // Direccion vertical normalizada: -1 arriba, 0 quieto, 1 abajo.
+        return (arriba ? -1 : 0) + (abajo ? 1 : 0);
+    }
+
+    private void actualizarEstadoMovimiento(int codigoTecla, boolean presionada) {
+        // Unifica el mapeo de teclas a estados de movimiento.
+        if (esTeclaArriba(codigoTecla)) {
+            arriba = presionada;
         }
-        if (abajo) {
-            dy += 1;
+        if (esTeclaAbajo(codigoTecla)) {
+            abajo = presionada;
         }
-        return dy;
+        if (esTeclaIzquierda(codigoTecla)) {
+            izquierda = presionada;
+        }
+        if (esTeclaDerecha(codigoTecla)) {
+            derecha = presionada;
+        }
+    }
+
+    private boolean esTeclaArriba(int codigoTecla) {
+        // Acepta tanto WASD como flechas.
+        return codigoTecla == KeyEvent.VK_W || codigoTecla == KeyEvent.VK_UP;
+    }
+
+    private boolean esTeclaAbajo(int codigoTecla) {
+        // Acepta tanto WASD como flechas.
+        return codigoTecla == KeyEvent.VK_S || codigoTecla == KeyEvent.VK_DOWN;
+    }
+
+    private boolean esTeclaIzquierda(int codigoTecla) {
+        // Acepta tanto WASD como flechas.
+        return codigoTecla == KeyEvent.VK_A || codigoTecla == KeyEvent.VK_LEFT;
+    }
+
+    private boolean esTeclaDerecha(int codigoTecla) {
+        // Acepta tanto WASD como flechas.
+        return codigoTecla == KeyEvent.VK_D || codigoTecla == KeyEvent.VK_RIGHT;
     }
 
     private void actualizarUltimaDireccion() {
+        // Guarda la ultima direccion no nula para orientar pases/tiros sin input.
         int dx = direccionActualX();
         int dy = direccionActualY();
         if (dx != 0 || dy != 0) {
@@ -212,12 +251,16 @@ public class EntradaJuego {
         }
     }
 
-    private double calcularFactorCarga(long inicioCargaNs) {
+    private double calcularFactorBarra(long inicioCargaNs) {
         if (inicioCargaNs <= 0L) {
             return FACTOR_MIN_CARGA;
         }
         long duracionNs = Math.max(0L, System.nanoTime() - inicioCargaNs);
-        double progreso = Math.min(1.0, duracionNs / (double) CARGA_MAX_NS);
-        return FACTOR_MIN_CARGA + (FACTOR_MAX_CARGA - FACTOR_MIN_CARGA) * progreso;
+        long ciclo = PERIODO_BARRA_NS <= 0 ? 1 : PERIODO_BARRA_NS;
+        long posicion = duracionNs % ciclo;
+        double fase = posicion / (double) ciclo;
+        // Onda triangular: 0->1->0 para que la barra suba y baje.
+        double triangular = fase < 0.5 ? fase * 2.0 : (1.0 - fase) * 2.0;
+        return FACTOR_MIN_CARGA + (FACTOR_MAX_CARGA - FACTOR_MIN_CARGA) * triangular;
     }
 }

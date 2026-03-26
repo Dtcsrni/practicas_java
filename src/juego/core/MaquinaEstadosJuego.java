@@ -52,38 +52,16 @@ public class MaquinaEstadosJuego {
 
     public void procesarEventoJuego(EventoJuego evento) {
         // Convierte eventos del motor en estados visibles para el jugador.
-        if (evento == EventoJuego.GOL_LOCAL) {
-            cambiarEstado(EstadoJuego.GOL);
-            framesEstado = ConfiguracionJuego.FRAMES_MENSAJE_GOL;
-            mensajeTemporal = "Gol local";
-            return;
-        }
-        if (evento == EventoJuego.GOL_RIVAL) {
-            cambiarEstado(EstadoJuego.GOL);
-            framesEstado = ConfiguracionJuego.FRAMES_MENSAJE_GOL;
-            mensajeTemporal = "Gol rival";
-            return;
-        }
-        if (evento == EventoJuego.FALTA_A_FAVOR) {
-            cambiarEstado(EstadoJuego.FALTA);
-            framesEstado = ConfiguracionJuego.FRAMES_MENSAJE_FALTA;
-            mensajeTemporal = "Falta a favor";
-            return;
-        }
-        if (evento == EventoJuego.FALTA_EN_CONTRA) {
-            cambiarEstado(EstadoJuego.FALTA);
-            framesEstado = ConfiguracionJuego.FRAMES_MENSAJE_FALTA;
-            mensajeTemporal = "Falta en contra";
-            return;
-        }
-        if (evento == EventoJuego.VICTORIA) {
-            cambiarEstado(EstadoJuego.VICTORIA);
-            mensajeTemporal = "";
-            return;
-        }
-        if (evento == EventoJuego.DERROTA) {
-            cambiarEstado(EstadoJuego.DERROTA);
-            mensajeTemporal = "";
+        switch (evento) {
+            case GOL_LOCAL -> mostrarOverlayTemporal(EstadoJuego.GOL, ConfiguracionJuego.FRAMES_MENSAJE_GOL, "Gol local");
+            case GOL_RIVAL -> mostrarOverlayTemporal(EstadoJuego.GOL, ConfiguracionJuego.FRAMES_MENSAJE_GOL, "Gol rival");
+            case FALTA_A_FAVOR -> mostrarOverlayTemporal(EstadoJuego.FALTA, ConfiguracionJuego.FRAMES_MENSAJE_FALTA, "Falta a favor");
+            case FALTA_EN_CONTRA -> mostrarOverlayTemporal(EstadoJuego.FALTA, ConfiguracionJuego.FRAMES_MENSAJE_FALTA, "Falta en contra");
+            case VICTORIA -> mostrarEstadoFinal(EstadoJuego.VICTORIA);
+            case EMPATE -> mostrarEstadoFinal(EstadoJuego.EMPATE);
+            case DERROTA -> mostrarEstadoFinal(EstadoJuego.DERROTA);
+            default -> {
+            }
         }
     }
 
@@ -101,5 +79,18 @@ public class MaquinaEstadosJuego {
     private void cambiarEstado(EstadoJuego nuevoEstado) {
         // Unico punto de mutacion del estado visual.
         estadoActual = nuevoEstado;
+    }
+
+    private void mostrarOverlayTemporal(EstadoJuego estado, int duracionFrames, String mensaje) {
+        // Muestra un estado intermedio (gol/falta) por un tiempo limitado.
+        cambiarEstado(estado);
+        framesEstado = duracionFrames;
+        mensajeTemporal = mensaje;
+    }
+
+    private void mostrarEstadoFinal(EstadoJuego estado) {
+        // Estados finales (victoria/empate/derrota) sin contador de expiracion.
+        cambiarEstado(estado);
+        mensajeTemporal = "";
     }
 }

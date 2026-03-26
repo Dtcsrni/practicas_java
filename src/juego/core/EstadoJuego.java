@@ -7,6 +7,7 @@ public enum EstadoJuego {
     GOL,
     FALTA,
     PAUSADO,
+    EMPATE,
     VICTORIA,
     DERROTA
 }

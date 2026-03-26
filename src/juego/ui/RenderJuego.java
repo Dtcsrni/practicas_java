@@ -10,6 +10,7 @@ import java.awt.BasicStroke;
 import java.awt.RenderingHints;
 
 import juego.core.ConfiguracionJuego;
+import juego.core.EntradaJuego;
 import juego.core.EstadoJuego;
 import juego.core.MaquinaEstadosJuego;
 import juego.core.MotorJuego;
@@ -17,7 +18,7 @@ import juego.entidades.Jugador;
 
 // Renderizador 2D puro: dibuja escena, HUD y overlays sin mutar la logica.
 public class RenderJuego {
-    public void dibujarEscena(Graphics g, MotorJuego motor, MaquinaEstadosJuego maquinaEstados, int frameAnimacion) {
+    public void dibujarEscena(Graphics g, MotorJuego motor, MaquinaEstadosJuego maquinaEstados, EntradaJuego entrada, int frameAnimacion) {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
@@ -38,9 +39,11 @@ public class RenderJuego {
         for (Jugador rival : motor.getRivales()) {
             rival.dibujar(g2);
         }
+        motor.getArbitro().dibujar(g2);
         dibujarEtiquetasJugadores(g2, motor);
 
-        dibujarHUD(g2, motor);
+        dibujarHUD(g2, motor, entrada);
+        dibujarAnimacionSorteoMoneda(g2, motor);
         dibujarOverlayEstado(g2, maquinaEstados.getEstadoActual(), maquinaEstados.getMensajeTemporal(), motor);
         g2.dispose();
     }
@@ -245,19 +248,12 @@ public class RenderJuego {
     private void dibujarEtiquetasJugadores(Graphics2D g, MotorJuego motor) {
         g.setFont(new Font("SansSerif", Font.BOLD, 12));
         for (Jugador jugador : motor.getTodosJugadores()) {
-            String nombre = jugador.getNombre();
-            FontMetrics metrics = g.getFontMetrics();
-            int anchoTexto = metrics.stringWidth(nombre);
-            int x = jugador.getX() + jugador.getAncho() / 2 - anchoTexto / 2;
-            int y = jugador.getY() - 10;
-            g.setColor(new Color(0, 0, 0, 120));
-            g.fillRoundRect(x - 6, y - 11, anchoTexto + 12, 16, 8, 8);
-            g.setColor(new Color(255, 246, 228));
-            g.drawString(nombre, x, y);
+            dibujarEtiquetaJugador(g, jugador, new Color(255, 246, 228), new Color(0, 0, 0, 120));
         }
+        dibujarEtiquetaJugador(g, motor.getArbitro(), new Color(255, 233, 120), new Color(0, 0, 0, 130));
     }
 
-    private void dibujarHUD(Graphics2D g, MotorJuego motor) {
+    private void dibujarHUD(Graphics2D g, MotorJuego motor, EntradaJuego entrada) {
         // HUD de marcador, posesion y estado del balon.
         g.setPaint(new GradientPaint(18, 18, new Color(6, 10, 13, 210), 460, 230, new Color(20, 40, 34, 180)));
         g.fillRoundRect(24, 22, 470, 232, 22, 22);
@@ -268,7 +264,7 @@ public class RenderJuego {
         g.setFont(new Font("SansSerif", Font.BOLD, 20));
         g.drawString("MARCADOR " + motor.getGolesLocal() + " - " + motor.getGolesRival(), 42, 54);
         g.setFont(new Font("SansSerif", Font.PLAIN, 15));
-        g.drawString("Meta: " + ConfiguracionJuego.META_GOLES + " goles", 42, 84);
+        g.drawString("Tiempo: " + motor.getTiempoPartidoTexto(), 42, 84);
         g.drawString("Jugador: X=" + motor.getJugadorPrincipal().getX() + "  Y=" + motor.getJugadorPrincipal().getY(), 42, 112);
         g.drawString("Balon: " + motor.getPoseedorTexto(), 42, 140);
         g.drawString("Stamina: " + motor.getStaminaPrincipalPorcentaje() + "%", 42, 168);
@@ -277,8 +273,99 @@ public class RenderJuego {
         g.drawString("Altura balon: " + String.format("%.1f", motor.getBalon().getAltura()), 42, 252);
         g.drawString("Controles: SHIFT correr | SPACE pase | X tiro", 42, 280);
         if (motor.getTextoSaque() != null && !motor.getTextoSaque().isEmpty()) {
-            g.setColor(new Color(255, 219, 94));
-            g.drawString("Aviso: " + motor.getTextoSaque(), 250, 84);
+            dibujarAvisoHUD(g, "Aviso: " + motor.getTextoSaque(), 250, 84);
+        }
+        dibujarBarraCargaAccion(g, entrada);
+    }
+
+    private void dibujarBarraCargaAccion(Graphics2D g, EntradaJuego entrada) {
+        if (entrada == null || (!entrada.estaCargandoPase() && !entrada.estaCargandoTiro())) {
+            return;
+        }
+        int x = 42;
+        int y = 294;
+        int ancho = 280;
+        int alto = 18;
+        double factor = entrada.getFactorCargaActiva();
+        double progreso = (factor - 0.35) / (1.00 - 0.35);
+        progreso = Math.max(0.0, Math.min(1.0, progreso));
+        int anchoRelleno = (int) Math.round(ancho * progreso);
+
+        g.setColor(new Color(20, 20, 20, 190));
+        g.fillRoundRect(x, y, ancho, alto, 10, 10);
+        g.setColor(new Color(255, 255, 255, 70));
+        g.drawRoundRect(x, y, ancho, alto, 10, 10);
+
+        Color color = entrada.estaCargandoTiro() ? new Color(255, 116, 72) : new Color(72, 190, 255);
+        g.setColor(color);
+        g.fillRoundRect(x + 1, y + 1, Math.max(2, anchoRelleno - 2), alto - 2, 8, 8);
+
+        g.setColor(new Color(245, 245, 245));
+        g.setFont(new Font("SansSerif", Font.BOLD, 13));
+        g.drawString("Fuerza " + entrada.getEtiquetaCargaActiva() + " " + (int) Math.round(progreso * 100) + "%", x + 8, y - 4);
+    }
+
+    private void dibujarEtiquetaJugador(Graphics2D g, Jugador jugador, Color colorTexto, Color colorFondo) {
+        // Etiqueta flotante con nombre encima del sprite.
+        String nombre = jugador.getNombre();
+        FontMetrics metrics = g.getFontMetrics();
+        int anchoTexto = metrics.stringWidth(nombre);
+        int x = jugador.getX() + jugador.getAncho() / 2 - anchoTexto / 2;
+        int y = jugador.getY() - 10;
+        g.setColor(colorFondo);
+        g.fillRoundRect(x - 6, y - 11, anchoTexto + 12, 16, 8, 8);
+        g.setColor(colorTexto);
+        g.drawString(nombre, x, y);
+    }
+
+    private void dibujarAvisoHUD(Graphics2D g, String texto, int x, int y) {
+        // Mensaje contextual corto dentro del HUD (saques, avisos).
+        g.setColor(new Color(255, 219, 94));
+        g.drawString(texto, x, y);
+    }
+
+    private void dibujarAnimacionSorteoMoneda(Graphics2D g, MotorJuego motor) {
+        if (!motor.isSorteoMonedaActivo()) {
+            return;
+        }
+
+        int cajaAncho = 360;
+        int cajaAlto = 170;
+        int xCaja = ConfiguracionJuego.ANCHO_PANEL / 2 - cajaAncho / 2;
+        int yCaja = 92;
+        g.setColor(new Color(8, 14, 20, 195));
+        g.fillRoundRect(xCaja, yCaja, cajaAncho, cajaAlto, 18, 18);
+        g.setColor(new Color(255, 255, 255, 55));
+        g.drawRoundRect(xCaja, yCaja, cajaAncho, cajaAlto, 18, 18);
+
+        g.setFont(new Font("SansSerif", Font.BOLD, 20));
+        g.setColor(new Color(250, 237, 205));
+        g.drawString("Sorteo inicial", xCaja + 112, yCaja + 32);
+
+        int frame = motor.getFramesAnimacionMoneda();
+        double giro = Math.sin(frame * 0.35);
+        int monedaW = Math.max(6, (int) Math.round(52 * Math.abs(giro)));
+        int monedaH = 52;
+        int xMoneda = ConfiguracionJuego.ANCHO_PANEL / 2 - monedaW / 2;
+        int yMoneda = yCaja + 54;
+        Color colorCara = giro >= 0 ? new Color(249, 212, 82) : new Color(214, 220, 228);
+        Color colorBorde = giro >= 0 ? new Color(201, 141, 38) : new Color(135, 147, 162);
+        g.setColor(colorCara);
+        g.fillOval(xMoneda, yMoneda, monedaW, monedaH);
+        g.setColor(colorBorde);
+        g.drawOval(xMoneda, yMoneda, monedaW, monedaH);
+        g.setColor(new Color(255, 255, 255, 120));
+        g.drawOval(xMoneda + 2, yMoneda + 2, Math.max(2, monedaW - 4), monedaH - 4);
+
+        int segundos = (int) Math.ceil(motor.getFramesSorteoMoneda() / (double) ConfiguracionJuego.FPS);
+        g.setFont(new Font("SansSerif", Font.PLAIN, 15));
+        g.setColor(new Color(245, 245, 245));
+        g.drawString("El arbitro lanza la moneda... " + segundos + "s", xCaja + 62, yCaja + 142);
+        String resultado = motor.getResultadoMoneda();
+        if (resultado != null && !resultado.isEmpty() && !resultado.equals("Sorteo inicial en curso")) {
+            g.setFont(new Font("SansSerif", Font.BOLD, 16));
+            g.setColor(new Color(255, 228, 128));
+            g.drawString(resultado, xCaja + 86, yCaja + 162);
         }
     }
 
@@ -309,6 +396,10 @@ public class RenderJuego {
         } else if (estado == EstadoJuego.VICTORIA) {
             titulo = "Ganaste la reta";
             subtitulo = "Marcador final: " + motor.getGolesLocal() + " - " + motor.getGolesRival();
+            detalle = "R para nuevo partido";
+        } else if (estado == EstadoJuego.EMPATE) {
+            titulo = "Empate";
+            subtitulo = "Tiempo cumplido: " + motor.getGolesLocal() + " - " + motor.getGolesRival();
             detalle = "R para nuevo partido";
         } else {
             titulo = "Derrota";

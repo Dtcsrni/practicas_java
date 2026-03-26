@@ -49,7 +49,7 @@ public class PanelJuego extends JPanel implements KeyListener, ActionListener {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         // Render completo del frame actual.
-        renderizador.dibujarEscena(g, motor, maquinaEstados, motor.getFramesAnimacion());
+        renderizador.dibujarEscena(g, motor, maquinaEstados, entrada, motor.getFramesAnimacion());
     }
 
     @Override
@@ -77,28 +77,7 @@ public class PanelJuego extends JPanel implements KeyListener, ActionListener {
     public void keyPressed(KeyEvent e) {
         int codigo = e.getKeyCode();
 
-        // ENTER inicia la partida desde el menu.
-        if (codigo == KeyEvent.VK_ENTER) {
-            maquinaEstados.iniciarDesdeInicio();
-            gestorSonido.reproducir(TipoSonido.INICIO);
-            return;
-        }
-
-        // R reinicia partido y estado visual.
-        if (codigo == KeyEvent.VK_R) {
-            motor.reiniciarPartido();
-            maquinaEstados.reiniciar();
-            entrada.limpiarMovimiento();
-            gestorSonido.reproducir(TipoSonido.SAQUE);
-            return;
-        }
-
-        // P pausa o reanuda.
-        if (codigo == KeyEvent.VK_P) {
-            maquinaEstados.alternarPausa();
-            if (!maquinaEstados.permiteActualizarMundo()) {
-                entrada.limpiarMovimiento();
-            }
+        if (manejarTeclaGlobal(codigo)) {
             return;
         }
 
@@ -124,5 +103,32 @@ public class PanelJuego extends JPanel implements KeyListener, ActionListener {
         while ((sonido = motor.consumirSonidoPendiente()) != null) {
             gestorSonido.reproducir(sonido);
         }
+    }
+
+    private boolean manejarTeclaGlobal(int codigo) {
+        // Atajos globales disponibles sin importar direccion de movimiento.
+        // ENTER inicia la partida desde el menu.
+        if (codigo == KeyEvent.VK_ENTER) {
+            maquinaEstados.iniciarDesdeInicio();
+            gestorSonido.reproducir(TipoSonido.INICIO);
+            return true;
+        }
+        // R reinicia partido y estado visual.
+        if (codigo == KeyEvent.VK_R) {
+            motor.reiniciarPartido();
+            maquinaEstados.reiniciar();
+            entrada.limpiarMovimiento();
+            gestorSonido.reproducir(TipoSonido.SAQUE);
+            return true;
+        }
+        // P pausa o reanuda.
+        if (codigo == KeyEvent.VK_P) {
+            maquinaEstados.alternarPausa();
+            if (!maquinaEstados.permiteActualizarMundo()) {
+                entrada.limpiarMovimiento();
+            }
+            return true;
+        }
+        return false;
     }
 }

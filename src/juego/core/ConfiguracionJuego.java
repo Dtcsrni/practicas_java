@@ -14,6 +14,10 @@ public final class ConfiguracionJuego {
 
     // Objetivo del partido.
     public static final int META_GOLES = 8;
+    // Duracion real de un partido jugable (en segundos de simulacion).
+    public static final int DURACION_PARTIDO_SEGUNDOS = 7 * 60;
+    // El reloj mostrado se escala a minutos "futbol" para aproximar 90'.
+    public static final int MINUTOS_REGLAMENTARIOS = 90;
     // Geometria de la porteria.
     public static final int ANCHO_PORTERIA = 14;
     public static final int ALTO_PORTERIA = 188;

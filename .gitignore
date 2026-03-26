@@ -1,0 +1,10 @@
+# Artefactos de compilacion Java
+*.class
+
+# Directorios de salida locales
+out/
+out_run/
+out_test/
+
+# Archivos de IDE/editor
+.vscode/
