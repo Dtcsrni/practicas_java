@@ -242,6 +242,14 @@ public class Jugador extends EntidadJuego {
         return STAMINA_MAX;
     }
 
+    public int getDireccionX() {
+        return direccionX;
+    }
+
+    public int getDireccionY() {
+        return direccionY;
+    }
+
     public void actualizarAnimacion(int dx, int dy) {
         // En movimiento el ciclo avanza rapido; quieto, solo respira.
         int actividad = Math.abs(dx) + Math.abs(dy);

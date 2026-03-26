@@ -6,7 +6,7 @@ import javax.swing.JFrame;
 public class VentanaJuego extends JFrame {
     public VentanaJuego(){
         // Configuracion base de la ventana.
-        setTitle("Proyecto Juego ");
+        setTitle("La Canchita - Futbol Callejero (Java)");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         // Mantiene una resolucion fija para preservar el layout.
         setResizable(false);
