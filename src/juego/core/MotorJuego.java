@@ -24,15 +24,15 @@ public class MotorJuego {
     private static final double DISTANCIA_MAXIMA_CONTROL = 42.0;
     private static final double DISTANCIA_MAXIMA_POSESION = 82.0;
     private static final double ALTURA_MAXIMA_CONTROL = 8.0;
-    private static final double ALTURA_MAXIMA_GOL = 26.0;
+    private static final double ALTURA_MAXIMA_GOL = 30.0;
     private static final double ALTURA_MINIMA_TRAVESANO = 26.0;
     private static final double ALTURA_MAXIMA_TRAVESANO = 38.0;
     private static final double ALTURA_MAXIMA_ATAJADA = 32.0;
-    private static final double DISTANCIA_ATAJADA_PORTERO = 60.0;
-    private static final double DISTANCIA_DESVIO_PORTERO = 86.0;
+    private static final double DISTANCIA_ATAJADA_PORTERO = 50.0;
+    private static final double DISTANCIA_DESVIO_PORTERO = 72.0;
     private static final int LOOKAHEAD_ATAJADA_FRAMES = 14;
-    private static final double FACTOR_ATAJADA_MIN = 0.72;
-    private static final double FACTOR_ATAJADA_MAX = 0.93;
+    private static final double FACTOR_ATAJADA_MIN = 0.60;
+    private static final double FACTOR_ATAJADA_MAX = 0.82;
     private static final double GRAVEDAD_BALON = 0.36;
     private static final int MARGEN_REANUDACION = 72;
     private static final double ARRASTRE_BALON = 0.34;
@@ -42,7 +42,7 @@ public class MotorJuego {
     private static final double DISTANCIA_PRESION_ALTA = 86.0;
     private static final double DISTANCIA_PASE_SEGURA = 250.0;
     private static final double DISTANCIA_PASE_NPC = 170.0;
-    private static final double DISTANCIA_TIRO_CLARA = 150.0;
+    private static final double DISTANCIA_TIRO_CLARA = 210.0;
 
     private final Random aleatorio;
     private final Rectangle arcoIzquierdo;
@@ -293,8 +293,8 @@ public class MotorJuego {
             objetivoX = ConfiguracionJuego.CAMPO_X_MAX - 170;
             objetivoY = calcularCarrilAtaqueY(aliadoLocal, true);
         } else if (!balonLibre && poseedorEsLocal) {
-            objetivoX = calcularXApoyoOfensivo(poseedorBalon, true, false);
-            objetivoY = calcularCarrilApoyo(poseedorBalon, true, false);
+            objetivoX = calcularXApoyoOfensivo(poseedorBalon, true, true);
+            objetivoY = calcularCarrilApoyo(poseedorBalon, true, true);
         } else if (!balonLibre) {
             // En defensa intenta cerrar linea de pase y proteger el carril central.
             objetivoX = (poseedorBalon.getX() + jugadorPrincipal.getX()) / 2 - 28;
@@ -328,17 +328,17 @@ public class MotorJuego {
         } else if (balonLibre) {
             objetivoRivalUnoX = balon.getX() - 8;
             objetivoRivalUnoY = balon.getY();
-            objetivoRivalDosX = (int) balon.getCentroX() + 52;
-            objetivoRivalDosY = (int) balon.getCentroY() + (balon.getCentroY() < ConfiguracionJuego.ALTO_PANEL / 2 ? 56 : -56);
+            objetivoRivalDosX = (int) balon.getCentroX() + 96;
+            objetivoRivalDosY = (int) balon.getCentroY() + (balon.getCentroY() < ConfiguracionJuego.ALTO_PANEL / 2 ? 94 : -94);
         } else if (poseedorBalon == rivalUno) {
             objetivoRivalUnoX = ConfiguracionJuego.CAMPO_X_MIN + 132;
             objetivoRivalUnoY = calcularCarrilAtaqueY(rivalUno, false);
-            objetivoRivalDosX = calcularXApoyoOfensivo(rivalUno, false, true);
+            objetivoRivalDosX = calcularXApoyoOfensivo(rivalUno, false, false);
             objetivoRivalDosY = calcularCarrilApoyo(rivalUno, false, true);
         } else if (poseedorBalon == rivalDos) {
             objetivoRivalDosX = ConfiguracionJuego.CAMPO_X_MIN + 132;
             objetivoRivalDosY = calcularCarrilAtaqueY(rivalDos, false);
-            objetivoRivalUnoX = calcularXApoyoOfensivo(rivalDos, false, false);
+            objetivoRivalUnoX = calcularXApoyoOfensivo(rivalDos, false, true);
             objetivoRivalUnoY = calcularCarrilApoyo(rivalDos, false, false);
         } else {
             objetivoRivalUnoX = calcularXApoyoOfensivo(poseedorBalon, false, false);
@@ -565,13 +565,14 @@ public class MotorJuego {
         boolean receptorMasLibre = receptor != null
             && distanciaHorizontalAlArco(receptor) + 30.0 < distanciaArco
             && distanciaRivalMasCercano(receptor, esJugadorLocal(receptor)) > distanciaPresion + 14.0;
+        boolean tiroForzado = enZonaDeTiro && distanciaArco < 235.0;
 
         double[] direccion;
         double fuerza;
 
-        if (enZonaDeTiro && (!paseVentajoso || distanciaArco < DISTANCIA_TIRO_CLARA || bajoPresion)) {
+        if (tiroForzado || (enZonaDeTiro && (!paseVentajoso || distanciaArco < DISTANCIA_TIRO_CLARA || bajoPresion))) {
             direccion = direccionAlArcoContrario(poseedor);
-            fuerza = FUERZA_TIRO_MAX * 0.94;
+            fuerza = FUERZA_TIRO_MAX * 0.98;
             registrarSonido(TipoSonido.TIRO);
         } else if (esPortero || bajoPresion || receptorMasLibre || paseVentajoso) {
             direccion = receptor != null ? direccionHaciaJugador(poseedor, receptor) : direccionAlArcoContrario(poseedor);
@@ -583,7 +584,7 @@ public class MotorJuego {
             return false;
         }
 
-        double elevacion = enZonaDeTiro ? 4.8 : (esPortero ? 2.2 : 1.6);
+        double elevacion = (enZonaDeTiro || tiroForzado) ? 4.2 : (esPortero ? 2.2 : 1.4);
         lanzarBalonDesdePoseedor(direccion, fuerza, elevacion);
         balonLibre = true;
         ultimoToqueLocal = esJugadorLocal(poseedor);
@@ -857,7 +858,7 @@ public class MotorJuego {
     private int calcularCarrilApoyo(Jugador poseedor, boolean equipoLocal, boolean extremo) {
         int centroPorteria = ConfiguracionJuego.Y_PORTERIA + ConfiguracionJuego.ALTO_PORTERIA / 2;
         int signo = poseedor.getY() < centroPorteria ? 1 : -1;
-        int offset = extremo ? 96 : 58;
+        int offset = extremo ? 132 : 84;
         int carril = poseedor.getY() + signo * offset;
         int minimo = ConfiguracionJuego.CAMPO_Y_MIN + 26;
         int maximo = ConfiguracionJuego.CAMPO_Y_MAX - 56;
@@ -867,7 +868,7 @@ public class MotorJuego {
     private int calcularYBloqueDefensivo(Jugador poseedor, boolean equipoLocal, boolean extremo) {
         int centroPorteria = ConfiguracionJuego.Y_PORTERIA + ConfiguracionJuego.ALTO_PORTERIA / 2;
         int referencia = (poseedor.getY() + centroPorteria) / 2;
-        int ajuste = extremo ? 52 : -36;
+        int ajuste = extremo ? 84 : -54;
         int y = referencia + (poseedor.getY() < centroPorteria ? ajuste : -ajuste);
         int minimo = ConfiguracionJuego.CAMPO_Y_MIN + 24;
         int maximo = ConfiguracionJuego.CAMPO_Y_MAX - 54;
@@ -875,7 +876,7 @@ public class MotorJuego {
     }
 
     private int calcularXApoyoOfensivo(Jugador poseedor, boolean equipoLocal, boolean extremo) {
-        int offset = extremo ? 116 : 74;
+        int offset = extremo ? 150 : 96;
         int x = poseedor.getX() + (equipoLocal ? -offset : offset);
         int minimo = ConfiguracionJuego.CAMPO_X_MIN + 32;
         int maximo = ConfiguracionJuego.CAMPO_X_MAX - 80;
