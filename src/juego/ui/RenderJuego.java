@@ -271,10 +271,11 @@ public class RenderJuego {
         g.drawString("Meta: " + ConfiguracionJuego.META_GOLES + " goles", 42, 84);
         g.drawString("Jugador: X=" + motor.getJugadorPrincipal().getX() + "  Y=" + motor.getJugadorPrincipal().getY(), 42, 112);
         g.drawString("Balon: " + motor.getPoseedorTexto(), 42, 140);
-        g.drawString("Bonus: " + motor.getPuntosBonus(), 42, 168);
-        g.drawString("Ultimo gol: " + motor.getResumenUltimoGol(), 42, 196);
-        g.drawString("Altura balon: " + String.format("%.1f", motor.getBalon().getAltura()), 42, 224);
-        g.drawString("Controles: mantén SPACE para pase y X para tiro", 42, 248);
+        g.drawString("Stamina: " + motor.getStaminaPrincipalPorcentaje() + "%", 42, 168);
+        g.drawString("Bonus: " + motor.getPuntosBonus(), 42, 196);
+        g.drawString("Ultimo gol: " + motor.getResumenUltimoGol(), 42, 224);
+        g.drawString("Altura balon: " + String.format("%.1f", motor.getBalon().getAltura()), 42, 252);
+        g.drawString("Controles: SHIFT correr | SPACE pase | X tiro", 42, 280);
         if (motor.getTextoSaque() != null && !motor.getTextoSaque().isEmpty()) {
             g.setColor(new Color(255, 219, 94));
             g.drawString("Aviso: " + motor.getTextoSaque(), 250, 84);

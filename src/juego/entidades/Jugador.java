@@ -7,10 +7,13 @@ import java.awt.RenderingHints;
 
 // Jugador vectorial con orientacion, animacion y estado de turbo.
 public class Jugador extends EntidadJuego {
+    private static final double STAMINA_MAX = 100.0;
     private String nombre;
-    private int velocidad;
     private int velocidadBase;
+    private int bonusVelocidadTemporal;
     private int framesTurboRestantes;
+    private double stamina;
+    private boolean agotado;
     private Color colorCuerpo;
     private Color colorBorde;
     private Color colorDetalle;
@@ -31,9 +34,11 @@ public class Jugador extends EntidadJuego {
     public Jugador(String nombre, int x, int y, int ancho, int alto, int velocidad, Color colorCuerpo, Color colorBorde, Color colorDetalle) {
         super(x, y, ancho, alto);
         this.nombre = nombre;
-        this.velocidad = velocidad;
         this.velocidadBase = velocidad;
+        this.bonusVelocidadTemporal = 0;
         this.framesTurboRestantes = 0;
+        this.stamina = STAMINA_MAX;
+        this.agotado = false;
         this.colorCuerpo = colorCuerpo;
         this.colorBorde = colorBorde;
         this.colorDetalle = colorDetalle;
@@ -147,15 +152,30 @@ public class Jugador extends EntidadJuego {
     public void activarTurbo(int velocidadExtra, int duracionFrames)
     {
         // El turbo suma velocidad durante un numero finito de frames.
-        velocidad = velocidadBase + velocidadExtra;
+        bonusVelocidadTemporal = velocidadExtra;
         framesTurboRestantes = duracionFrames;
     }
-    public void actualizarEstado(){
+
+    public void actualizarEstado(boolean sprintando, int intensidadMovimiento){
         // Consume la duracion pendiente del turbo.
         if (framesTurboRestantes > 0) {
             framesTurboRestantes--;
             if (framesTurboRestantes == 0) {
-                velocidad = velocidadBase; // Recupera la velocidad base.
+                bonusVelocidadTemporal = 0;
+            }
+        }
+
+        boolean moviendose = intensidadMovimiento > 0;
+        if (sprintando && moviendose && !agotado) {
+            stamina = Math.max(0.0, stamina - 1.05);
+            if (stamina <= 0.0) {
+                agotado = true;
+            }
+        } else {
+            double recuperacion = moviendose ? 0.28 : 0.70;
+            stamina = Math.min(STAMINA_MAX, stamina + recuperacion);
+            if (agotado && stamina >= 34.0) {
+                agotado = false;
             }
         }
     }
@@ -175,7 +195,7 @@ public class Jugador extends EntidadJuego {
     }
 
     public int getVelocidad() {
-        return velocidad;
+        return velocidadBase + bonusVelocidadTemporal;
     }
 
     public String getNombre() {
@@ -187,7 +207,27 @@ public class Jugador extends EntidadJuego {
     }
 
     public void setVelocidad(int velocidad) {
-        this.velocidad = velocidad;
+        this.velocidadBase = velocidad;
+    }
+
+    public int getVelocidadMovimiento(boolean sprintando) {
+        int velocidadNormal = Math.max(2, getVelocidad() - 1);
+        if (!sprintando || agotado || stamina < 8.0) {
+            return velocidadNormal;
+        }
+        return getVelocidad() + 1;
+    }
+
+    public boolean puedeSprintar() {
+        return !agotado && stamina >= 8.0;
+    }
+
+    public double getStamina() {
+        return stamina;
+    }
+
+    public double getStaminaMax() {
+        return STAMINA_MAX;
     }
 
     public void actualizarAnimacion(int dx, int dy) {

@@ -12,6 +12,7 @@ public class EntradaJuego {
     private boolean abajo;
     private boolean izquierda;
     private boolean derecha;
+    private boolean correr;
 
     private boolean pasePendiente;
     private boolean tiroPendiente;
@@ -39,6 +40,9 @@ public class EntradaJuego {
         if (codigoTecla == KeyEvent.VK_D || codigoTecla == KeyEvent.VK_RIGHT) {
             derecha = true;
         }
+        if (codigoTecla == KeyEvent.VK_SHIFT) {
+            correr = true;
+        }
         actualizarUltimaDireccion();
 
         // Empieza a cargar la accion al mantener la tecla.
@@ -65,6 +69,9 @@ public class EntradaJuego {
         }
         if (codigoTecla == KeyEvent.VK_D || codigoTecla == KeyEvent.VK_RIGHT) {
             derecha = false;
+        }
+        if (codigoTecla == KeyEvent.VK_SHIFT) {
+            correr = false;
         }
         actualizarUltimaDireccion();
 
@@ -111,6 +118,7 @@ public class EntradaJuego {
         abajo = false;
         izquierda = false;
         derecha = false;
+        correr = false;
         pasePendiente = false;
         tiroPendiente = false;
         pasePresionado = false;
@@ -167,6 +175,10 @@ public class EntradaJuego {
         double factor = factorTiroPendiente <= 0.0 ? FACTOR_MIN_CARGA : factorTiroPendiente;
         factorTiroPendiente = 0.0;
         return factor;
+    }
+
+    public boolean estaCorriendo() {
+        return correr;
     }
 
     private int direccionActualX() {
