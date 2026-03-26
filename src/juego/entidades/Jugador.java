@@ -3,6 +3,7 @@ package juego.entidades;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
 
 // Jugador vectorial con orientacion, animacion y estado de turbo.
@@ -51,6 +52,17 @@ public class Jugador extends EntidadJuego {
         // El motor resuelve colisiones y limites fuera de esta clase.
         x += dx;
         y += dy;
+    }
+
+    @Override
+    public Rectangle getBounds() {
+        // Hitbox centrada en torso/piernas: evita colisiones por cabeza y brazos.
+        int margenX = Math.max(3, (int) Math.round(ancho * 0.18));
+        int margenY = Math.max(6, (int) Math.round(alto * 0.24));
+        int anchoCaja = Math.max(6, ancho - margenX * 2);
+        int altoCaja = Math.max(10, (int) Math.round(alto * 0.64));
+        int yCaja = y + alto - altoCaja - 2;
+        return new Rectangle(x + margenX, yCaja, anchoCaja, altoCaja);
     }
 
     @Override

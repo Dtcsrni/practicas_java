@@ -21,6 +21,14 @@ public abstract class EntidadJuego {
         return new Rectangle(x, y, ancho, alto);
     }
 
+    protected Rectangle boundsConMargen(int margenX, int margenY) {
+        int nuevoX = x + margenX;
+        int nuevoY = y + margenY;
+        int nuevoAncho = Math.max(2, ancho - margenX * 2);
+        int nuevoAlto = Math.max(2, alto - margenY * 2);
+        return new Rectangle(nuevoX, nuevoY, nuevoAncho, nuevoAlto);
+    }
+
     public int getPuntos() {
         return 0;
     }

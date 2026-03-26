@@ -24,21 +24,23 @@ public class MotorJuego {
     private static final double DISTANCIA_MAXIMA_CONTROL = 42.0;
     private static final double DISTANCIA_MAXIMA_POSESION = 82.0;
     private static final double ALTURA_MAXIMA_CONTROL = 8.0;
-    private static final double ALTURA_MAXIMA_GOL = 30.0;
-    private static final double ALTURA_MINIMA_TRAVESANO = 26.0;
+    private static final double ALTURA_MAXIMA_GOL = 28.0;
+    private static final double ALTURA_MINIMA_TRAVESANO = 28.0;
     private static final double ALTURA_MAXIMA_TRAVESANO = 38.0;
     private static final double ALTURA_MAXIMA_ATAJADA = 32.0;
     private static final double DISTANCIA_ATAJADA_PORTERO = 50.0;
     private static final double DISTANCIA_DESVIO_PORTERO = 72.0;
+    private static final double ALCANCE_X_PORTERO = 178.0;
+    private static final double ALCANCE_Y_PORTERO = 132.0;
     private static final int LOOKAHEAD_ATAJADA_FRAMES = 14;
-    private static final double FACTOR_ATAJADA_MIN = 0.60;
-    private static final double FACTOR_ATAJADA_MAX = 0.82;
+    private static final double FACTOR_ATAJADA_MIN = 0.58;
+    private static final double FACTOR_ATAJADA_MAX = 0.80;
     private static final double GRAVEDAD_BALON = 0.36;
     private static final int MARGEN_REANUDACION = 72;
     private static final double ARRASTRE_BALON = 0.34;
     private static final double APORTE_MOVIMIENTO_POSEEDOR = 0.20;
     private static final double IMPULSO_BASE_MOVIMIENTO = 0.34;
-    private static final int COOLDOWN_DECISION_NPC = 14;
+    private static final int COOLDOWN_DECISION_NPC = 18;
     private static final double DISTANCIA_PRESION_ALTA = 86.0;
     private static final double DISTANCIA_PASE_SEGURA = 250.0;
     private static final double DISTANCIA_PASE_NPC = 170.0;
@@ -290,18 +292,24 @@ public class MotorJuego {
         int objetivoX;
         int objetivoY;
         if (!balonLibre && poseedorBalon == aliadoLocal) {
-            objetivoX = ConfiguracionJuego.CAMPO_X_MAX - 170;
+            objetivoX = ConfiguracionJuego.CAMPO_X_MAX - 195;
             objetivoY = calcularCarrilAtaqueY(aliadoLocal, true);
         } else if (!balonLibre && poseedorEsLocal) {
-            objetivoX = calcularXApoyoOfensivo(poseedorBalon, true, true);
+            objetivoX = calcularXApoyoOfensivo(poseedorBalon, true, false);
             objetivoY = calcularCarrilApoyo(poseedorBalon, true, true);
         } else if (!balonLibre) {
             // En defensa intenta cerrar linea de pase y proteger el carril central.
             objetivoX = (poseedorBalon.getX() + jugadorPrincipal.getX()) / 2 - 28;
             objetivoY = calcularYBloqueDefensivo(poseedorBalon, true, false);
         } else {
-            objetivoX = (int) balon.getCentroX() - aliadoLocal.getAncho() / 2;
-            objetivoY = (int) balon.getCentroY() - aliadoLocal.getAlto() / 2;
+            boolean persigue = perseguidorBalonLibre(true) == aliadoLocal;
+            if (persigue) {
+                objetivoX = (int) balon.getCentroX() - aliadoLocal.getAncho() / 2;
+                objetivoY = (int) balon.getCentroY() - aliadoLocal.getAlto() / 2;
+            } else {
+                objetivoX = calcularXApoyoLibre(true, false);
+                objetivoY = calcularYApoyoLibre(true, false);
+            }
         }
 
         sprintAliado = debeSprintarNpc(aliadoLocal, objetivoX, objetivoY, false);
@@ -326,19 +334,27 @@ public class MotorJuego {
             objetivoRivalDosX = calcularXCobertura(poseedorBalon, false, true);
             objetivoRivalDosY = calcularYBloqueDefensivo(poseedorBalon, false, true);
         } else if (balonLibre) {
-            objetivoRivalUnoX = balon.getX() - 8;
-            objetivoRivalUnoY = balon.getY();
-            objetivoRivalDosX = (int) balon.getCentroX() + 96;
-            objetivoRivalDosY = (int) balon.getCentroY() + (balon.getCentroY() < ConfiguracionJuego.ALTO_PANEL / 2 ? 94 : -94);
+            Jugador perseguidor = perseguidorBalonLibre(false);
+            if (perseguidor == rivalUno) {
+                objetivoRivalUnoX = balon.getX() - 8;
+                objetivoRivalUnoY = balon.getY();
+                objetivoRivalDosX = calcularXApoyoLibre(false, true);
+                objetivoRivalDosY = calcularYApoyoLibre(false, true);
+            } else {
+                objetivoRivalDosX = balon.getX() - 8;
+                objetivoRivalDosY = balon.getY();
+                objetivoRivalUnoX = calcularXApoyoLibre(false, false);
+                objetivoRivalUnoY = calcularYApoyoLibre(false, false);
+            }
         } else if (poseedorBalon == rivalUno) {
             objetivoRivalUnoX = ConfiguracionJuego.CAMPO_X_MIN + 132;
             objetivoRivalUnoY = calcularCarrilAtaqueY(rivalUno, false);
-            objetivoRivalDosX = calcularXApoyoOfensivo(rivalUno, false, false);
+            objetivoRivalDosX = calcularXApoyoOfensivo(rivalUno, false, true);
             objetivoRivalDosY = calcularCarrilApoyo(rivalUno, false, true);
         } else if (poseedorBalon == rivalDos) {
             objetivoRivalDosX = ConfiguracionJuego.CAMPO_X_MIN + 132;
             objetivoRivalDosY = calcularCarrilAtaqueY(rivalDos, false);
-            objetivoRivalUnoX = calcularXApoyoOfensivo(rivalDos, false, true);
+            objetivoRivalUnoX = calcularXApoyoOfensivo(rivalDos, false, false);
             objetivoRivalUnoY = calcularCarrilApoyo(rivalDos, false, false);
         } else {
             objetivoRivalUnoX = calcularXApoyoOfensivo(poseedorBalon, false, false);
@@ -367,7 +383,7 @@ public class MotorJuego {
         // intenta cerrar el angulo al arco y se adelanta si detecta una amenaza real.
         int xObjetivoLocal = calcularXObjetivoPortero(porteroLocal, true);
         int yObjetivoLocal = calcularYObjetivoPortero(porteroLocal, true);
-        sprintPorteroLocal = false;
+        sprintPorteroLocal = debeSprintarPortero(porteroLocal, true, xObjetivoLocal, yObjetivoLocal);
         int velocidadLocal = calcularVelocidadPortero(porteroLocal, true);
         movPorteroLocalX = calcularPaso(porteroLocal.getX(), xObjetivoLocal, velocidadLocal);
         movPorteroLocalY = calcularPaso(porteroLocal.getY(), yObjetivoLocal, velocidadLocal);
@@ -375,7 +391,7 @@ public class MotorJuego {
 
         int xObjetivoRival = calcularXObjetivoPortero(porteroRival, false);
         int yObjetivoRival = calcularYObjetivoPortero(porteroRival, false);
-        sprintPorteroRival = false;
+        sprintPorteroRival = debeSprintarPortero(porteroRival, false, xObjetivoRival, yObjetivoRival);
         int velocidadRival = calcularVelocidadPortero(porteroRival, false);
         movPorteroRivalX = calcularPaso(porteroRival.getX(), xObjetivoRival, velocidadRival);
         movPorteroRivalY = calcularPaso(porteroRival.getY(), yObjetivoRival, velocidadRival);
@@ -488,15 +504,17 @@ public class MotorJuego {
         }
 
         Jugador mejorCandidato = null;
-        double mejorDistancia = Double.MAX_VALUE;
+        double mejorPuntaje = Double.MAX_VALUE;
         for (Jugador jugador : getTodosJugadores()) {
             if (jugador == ultimoPateador && bloqueoRecapturaUltimoPateadorFrames > 0) {
                 continue;
             }
             if (estaEnZonaDeControl(jugador) && jugador.getBounds().intersects(balon.getBounds())) {
                 double distancia = distanciaAlBalon(jugador);
-                if (distancia < mejorDistancia) {
-                    mejorDistancia = distancia;
+                double penalizacionAgrupamiento = penalizacionAgrupamiento(jugador);
+                double puntaje = distancia + penalizacionAgrupamiento;
+                if (puntaje < mejorPuntaje) {
+                    mejorPuntaje = puntaje;
                     mejorCandidato = jugador;
                 }
             }
@@ -549,10 +567,7 @@ public class MotorJuego {
             return false;
         }
 
-        // IA simple basada en contexto:
-        // si el NPC esta en zona de tiro remata,
-        // si es portero o esta presionado busca pase/despeje,
-        // si no, sigue conduciendo.
+        // IA ofensiva: compara si conviene tirar ahora o pasar para un mejor tiro.
         Jugador poseedor = poseedorBalon;
         Jugador presionCercana = rivalMasCercanoA(poseedor, esJugadorLocal(poseedor));
         Jugador receptor = seleccionarReceptorNpc(poseedor);
@@ -561,40 +576,86 @@ public class MotorJuego {
         boolean enZonaDeTiro = estaEnZonaDeTiro(poseedor);
         boolean bajoPresion = distanciaPresion < DISTANCIA_PRESION_ALTA;
         boolean esPortero = poseedor == porteroLocal || poseedor == porteroRival;
-        boolean paseVentajoso = receptor != null && distanciaEntre(poseedor, receptor) < DISTANCIA_PASE_NPC;
-        boolean receptorMasLibre = receptor != null
-            && distanciaHorizontalAlArco(receptor) + 30.0 < distanciaArco
-            && distanciaRivalMasCercano(receptor, esJugadorLocal(receptor)) > distanciaPresion + 14.0;
-        boolean tiroForzado = enZonaDeTiro && distanciaArco < 235.0;
+        double scoreTiro = calcularScoreTiroNpc(poseedor, distanciaPresion, enZonaDeTiro);
+        double scorePase = calcularScorePaseParaTiro(poseedor, receptor, distanciaPresion);
+        boolean paseParaTiroMejor = receptor != null && scorePase > scoreTiro + 18.0;
 
         double[] direccion;
         double fuerza;
+        boolean esTiro;
 
-        if (tiroForzado || (enZonaDeTiro && (!paseVentajoso || distanciaArco < DISTANCIA_TIRO_CLARA || bajoPresion))) {
-            direccion = direccionAlArcoContrario(poseedor);
-            fuerza = FUERZA_TIRO_MAX * 0.98;
-            registrarSonido(TipoSonido.TIRO);
-        } else if (esPortero || bajoPresion || receptorMasLibre || paseVentajoso) {
+        if (esPortero) {
             direccion = receptor != null ? direccionHaciaJugador(poseedor, receptor) : direccionAlArcoContrario(poseedor);
-            fuerza = esPortero
-                ? FUERZA_PASE_MAX
-                : (receptorMasLibre ? FUERZA_PASE_MAX * 0.88 : (FUERZA_PASE_MIN + FUERZA_PASE_MAX) / 2.0);
-            registrarSonido(esPortero ? TipoSonido.SAQUE : TipoSonido.PASE);
+            fuerza = FUERZA_PASE_MAX;
+            esTiro = false;
+            registrarSonido(TipoSonido.SAQUE);
+        } else if (paseParaTiroMejor && !bajoPresion) {
+            direccion = direccionHaciaJugador(poseedor, receptor);
+            fuerza = FUERZA_PASE_MAX * 0.9;
+            esTiro = false;
+            registrarSonido(TipoSonido.PASE);
+        } else if (enZonaDeTiro || bajoPresion || distanciaArco < DISTANCIA_TIRO_CLARA) {
+            direccion = direccionTiroNpc(poseedor);
+            fuerza = FUERZA_TIRO_MAX * 0.98;
+            esTiro = true;
+            registrarSonido(TipoSonido.TIRO);
+        } else if (receptor != null) {
+            direccion = receptor != null ? direccionHaciaJugador(poseedor, receptor) : direccionAlArcoContrario(poseedor);
+            fuerza = (FUERZA_PASE_MIN + FUERZA_PASE_MAX) / 2.0;
+            esTiro = false;
+            registrarSonido(TipoSonido.PASE);
         } else {
             return false;
         }
 
-        double elevacion = (enZonaDeTiro || tiroForzado) ? 4.2 : (esPortero ? 2.2 : 1.4);
+        double elevacion = esTiro ? 4.2 : (esPortero ? 2.2 : 1.4);
         lanzarBalonDesdePoseedor(direccion, fuerza, elevacion);
         balonLibre = true;
         ultimoToqueLocal = esJugadorLocal(poseedor);
         poseedorBalon = null;
         cooldownRoboFrames = ConfiguracionJuego.FPS / 3;
-        cooldownCapturaLibreFrames = esPortero ? 12 : 9;
+        cooldownCapturaLibreFrames = esPortero ? 12 : 12;
         cooldownDecisionNpcFrames = COOLDOWN_DECISION_NPC;
         ultimoPateador = poseedor;
-        bloqueoRecapturaUltimoPateadorFrames = esPortero ? 18 : 12;
+        bloqueoRecapturaUltimoPateadorFrames = esPortero ? 18 : 20;
         return true;
+    }
+
+    private double calcularScoreTiroNpc(Jugador tirador, double distanciaPresion, boolean enZonaDeTiro) {
+        double distanciaArco = distanciaHorizontalAlArco(tirador);
+        double score = enZonaDeTiro ? 34.0 : -16.0;
+        score += Math.max(0.0, 290.0 - distanciaArco) * 0.24;
+        score += Math.min(40.0, distanciaPresion) * 0.16;
+        if (tirador == aliadoLocal || tirador == rivalDos) {
+            score += 10.0;
+        }
+        return score;
+    }
+
+    private double calcularScorePaseParaTiro(Jugador pasador, Jugador receptor, double distanciaPresionPasador) {
+        if (receptor == null) {
+            return -1000.0;
+        }
+        double distanciaPase = distanciaEntre(pasador, receptor);
+        if (distanciaPase > DISTANCIA_PASE_SEGURA) {
+            return -1000.0;
+        }
+
+        double distanciaArcoPasador = distanciaHorizontalAlArco(pasador);
+        double distanciaArcoReceptor = distanciaHorizontalAlArco(receptor);
+        double separacionReceptor = distanciaRivalMasCercano(receptor, esJugadorLocal(receptor));
+        double score = 0.0;
+        score += Math.max(0.0, distanciaArcoPasador - distanciaArcoReceptor) * 0.32;
+        score += Math.min(80.0, separacionReceptor) * 0.22;
+        score += Math.max(0.0, distanciaPresionPasador - 12.0) * 0.08;
+        score -= Math.max(0.0, distanciaPase - DISTANCIA_PASE_NPC) * 0.22;
+        if (estaEnZonaDeTiro(receptor)) {
+            score += 20.0;
+        }
+        if (receptor == aliadoLocal || receptor == rivalDos) {
+            score += 8.0;
+        }
+        return score;
     }
 
     private boolean estanEnRangoDeRobo(Jugador atacante, Jugador poseedor) {
@@ -688,6 +749,24 @@ public class MotorJuego {
         return new double[] { dx / magnitud, dy / magnitud };
     }
 
+    private double[] direccionTiroNpc(Jugador jugador) {
+        double arcoX = esJugadorLocal(jugador) ? ConfiguracionJuego.CAMPO_X_MAX + 6.0 : ConfiguracionJuego.CAMPO_X_MIN - 6.0;
+        double centroPorteriaY = ConfiguracionJuego.Y_PORTERIA + ConfiguracionJuego.ALTO_PORTERIA / 2.0;
+        double offsetVertical = jugador.getY() + jugador.getAlto() / 2.0 < centroPorteriaY ? 42.0 : -42.0;
+        double objetivoY = centroPorteriaY + offsetVertical;
+        if (aleatorio.nextDouble() < 0.35) {
+            objetivoY = centroPorteriaY;
+        }
+
+        double dx = arcoX - (jugador.getX() + jugador.getAncho() / 2.0);
+        double dy = objetivoY - (jugador.getY() + jugador.getAlto() / 2.0);
+        double magnitud = Math.sqrt(dx * dx + dy * dy);
+        if (magnitud < 0.0001) {
+            return direccionAlArcoContrario(jugador);
+        }
+        return new double[] { dx / magnitud, dy / magnitud };
+    }
+
     private Jugador seleccionarReceptorLocal(Jugador pasador) {
         Jugador[] opciones = new Jugador[] { jugadorPrincipal, aliadoLocal, porteroLocal };
         Jugador mejor = null;
@@ -734,7 +813,8 @@ public class MotorJuego {
             double separacion = marcador == null ? DISTANCIA_PASE_SEGURA : distanciaEntre(candidato, marcador);
             double penalizacionMarca = separacion < DISTANCIA_PRESION_ALTA ? 240.0 : 0.0;
             double bonificacionZonaTiro = estaEnZonaDeTiro(candidato) ? -70.0 : 0.0;
-            double puntaje = dx * dx + dy * dy + penalizacionAtras + penalizacionMarca + bonificacionProgresion + bonificacionZonaTiro;
+            double bonificacionPerfilRemate = candidato == aliadoLocal || candidato == rivalDos ? -40.0 : 0.0;
+            double puntaje = dx * dx + dy * dy + penalizacionAtras + penalizacionMarca + bonificacionProgresion + bonificacionZonaTiro + bonificacionPerfilRemate;
             if (puntaje < mejorPuntaje) {
                 mejorPuntaje = puntaje;
                 mejor = candidato;
@@ -843,7 +923,7 @@ public class MotorJuego {
             : (jugador.getX() + jugador.getAncho() / 2.0) - ConfiguracionJuego.CAMPO_X_MIN;
         double centroY = jugador.getY() + jugador.getAlto() / 2.0;
         double centroPorteriaY = ConfiguracionJuego.Y_PORTERIA + ConfiguracionJuego.ALTO_PORTERIA / 2.0;
-        return distanciaHorizontalAlArco < 250.0 && Math.abs(centroY - centroPorteriaY) < 132.0;
+        return distanciaHorizontalAlArco < 285.0 && Math.abs(centroY - centroPorteriaY) < 150.0;
     }
 
     private int calcularCarrilAtaqueY(Jugador jugador, boolean equipoLocal) {
@@ -858,7 +938,7 @@ public class MotorJuego {
     private int calcularCarrilApoyo(Jugador poseedor, boolean equipoLocal, boolean extremo) {
         int centroPorteria = ConfiguracionJuego.Y_PORTERIA + ConfiguracionJuego.ALTO_PORTERIA / 2;
         int signo = poseedor.getY() < centroPorteria ? 1 : -1;
-        int offset = extremo ? 132 : 84;
+        int offset = extremo ? 148 : 98;
         int carril = poseedor.getY() + signo * offset;
         int minimo = ConfiguracionJuego.CAMPO_Y_MIN + 26;
         int maximo = ConfiguracionJuego.CAMPO_Y_MAX - 56;
@@ -876,11 +956,32 @@ public class MotorJuego {
     }
 
     private int calcularXApoyoOfensivo(Jugador poseedor, boolean equipoLocal, boolean extremo) {
-        int offset = extremo ? 150 : 96;
+        int offset = extremo ? 176 : 110;
         int x = poseedor.getX() + (equipoLocal ? -offset : offset);
         int minimo = ConfiguracionJuego.CAMPO_X_MIN + 32;
         int maximo = ConfiguracionJuego.CAMPO_X_MAX - 80;
         return Math.max(minimo, Math.min(maximo, x));
+    }
+
+    private int calcularXApoyoLibre(boolean equipoLocal, boolean extremo) {
+        int offset = extremo ? 124 : 72;
+        int x = (int) balon.getCentroX() + (equipoLocal ? -offset : offset);
+        int minimo = ConfiguracionJuego.CAMPO_X_MIN + 28;
+        int maximo = ConfiguracionJuego.CAMPO_X_MAX - 76;
+        return Math.max(minimo, Math.min(maximo, x));
+    }
+
+    private int calcularYApoyoLibre(boolean equipoLocal, boolean extremo) {
+        int centro = (int) balon.getCentroY();
+        int offset = extremo ? 118 : 74;
+        int direccion = centro < ConfiguracionJuego.ALTO_PANEL / 2 ? 1 : -1;
+        int y = centro + direccion * offset;
+        if (!equipoLocal) {
+            y = centro - direccion * (extremo ? 92 : 58);
+        }
+        int minimo = ConfiguracionJuego.CAMPO_Y_MIN + 24;
+        int maximo = ConfiguracionJuego.CAMPO_Y_MAX - 54;
+        return Math.max(minimo, Math.min(maximo, y));
     }
 
     private int calcularXCobertura(Jugador poseedor, boolean equipoLocal, boolean extremo) {
@@ -902,6 +1003,40 @@ public class MotorJuego {
         return rival == null ? Double.MAX_VALUE : distanciaEntre(jugador, rival);
     }
 
+    private Jugador perseguidorBalonLibre(boolean equipoLocal) {
+        Jugador[] opciones = equipoLocal ? getLocales() : getRivales();
+        Jugador mejor = null;
+        double mejorPuntaje = Double.MAX_VALUE;
+        for (Jugador jugador : opciones) {
+            if (jugador == porteroLocal || jugador == porteroRival) {
+                continue;
+            }
+            double puntaje = distanciaAlBalon(jugador) + penalizacionAgrupamiento(jugador) * 0.65;
+            if (puntaje < mejorPuntaje) {
+                mejorPuntaje = puntaje;
+                mejor = jugador;
+            }
+        }
+        return mejor == null ? (equipoLocal ? jugadorPrincipal : rivalUno) : mejor;
+    }
+
+    private double penalizacionAgrupamiento(Jugador jugador) {
+        double penalizacion = 0.0;
+        for (Jugador otro : getTodosJugadores()) {
+            if (otro == jugador) {
+                continue;
+            }
+            double distancia = distanciaEntre(jugador, otro);
+            if (distancia < 42.0) {
+                penalizacion += 18.0;
+            }
+        }
+        if (jugador == rivalUno || jugador == jugadorPrincipal) {
+            penalizacion += 4.0;
+        }
+        return penalizacion;
+    }
+
     private boolean intentarAtajadaPortero() {
         if (!balonLibre || balon.getAltura() > ALTURA_MAXIMA_ATAJADA || cooldownAtajadaPorteroFrames > 0) {
             return false;
@@ -914,8 +1049,7 @@ public class MotorJuego {
     private EventoJuego verificarGol() {
         double centroX = balon.getCentroX();
         double centroY = balon.getCentroY();
-        boolean enRangoArco = centroY >= ConfiguracionJuego.Y_PORTERIA
-            && centroY <= ConfiguracionJuego.Y_PORTERIA + ConfiguracionJuego.ALTO_PORTERIA;
+        boolean enRangoArco = estaEntrePostes(centroY);
 
         // Un gol exige cruzar la linea entre postes y por debajo de cierta altura.
         // Si va demasiado alto, se trata como salida por encima del arco.
@@ -971,6 +1105,9 @@ public class MotorJuego {
         // mas bajo es gol/atajada, mas alto es salida.
         double alturaBalon = balon.getAltura();
         if (alturaBalon < ALTURA_MINIMA_TRAVESANO || alturaBalon > ALTURA_MAXIMA_TRAVESANO) {
+            return false;
+        }
+        if (!estaEntrePostes(balon.getCentroY())) {
             return false;
         }
 
@@ -1031,8 +1168,7 @@ public class MotorJuego {
         boolean fueraInferior = centroY > ConfiguracionJuego.CAMPO_Y_MAX;
         boolean fueraIzquierda = centroX < ConfiguracionJuego.CAMPO_X_MIN;
         boolean fueraDerecha = centroX > ConfiguracionJuego.CAMPO_X_MAX;
-        boolean enRangoArco = centroY >= ConfiguracionJuego.Y_PORTERIA
-            && centroY <= ConfiguracionJuego.Y_PORTERIA + ConfiguracionJuego.ALTO_PORTERIA;
+        boolean enRangoArco = estaEntrePostes(centroY);
 
         // Salida por banda.
         if (fueraSuperior || fueraInferior) {
@@ -1348,6 +1484,12 @@ public class MotorJuego {
         return !(arcoIzquierdo.intersects(entidad.getBounds()) || arcoDerecho.intersects(entidad.getBounds()));
     }
 
+    private boolean estaEntrePostes(double centroY) {
+        double margenPoste = 6.0;
+        return centroY >= ConfiguracionJuego.Y_PORTERIA + margenPoste
+            && centroY <= ConfiguracionJuego.Y_PORTERIA + ConfiguracionJuego.ALTO_PORTERIA - margenPoste;
+    }
+
     private void limitarPorteroEnZona(Jugador portero, boolean local) {
         // Mantiene a cada portero dentro de su zona de accion.
         int xMin = local ? 6 : ConfiguracionJuego.ANCHO_PANEL - 86;
@@ -1413,7 +1555,8 @@ public class MotorJuego {
     }
 
     private int calcularVelocidadPortero(Jugador portero, boolean local) {
-        int velocidad = Math.max(2, portero.getVelocidad() - 1);
+        boolean sprintando = local ? sprintPorteroLocal : sprintPorteroRival;
+        int velocidad = portero.getVelocidadMovimiento(sprintando);
         if (balonAmenazaArco(local)) {
             return velocidad + 2;
         }
@@ -1439,8 +1582,8 @@ public class MotorJuego {
         }
 
         double yProyectada = balon.getCentroY() + balon.getVelocidadY() * tiempo;
-        return yProyectada >= ConfiguracionJuego.Y_PORTERIA - 42
-            && yProyectada <= ConfiguracionJuego.Y_PORTERIA + ConfiguracionJuego.ALTO_PORTERIA + 42
+        return yProyectada >= ConfiguracionJuego.Y_PORTERIA - 30
+            && yProyectada <= ConfiguracionJuego.Y_PORTERIA + ConfiguracionJuego.ALTO_PORTERIA + 30
             && alturaBalonEnFrames(tiempo) <= ALTURA_MAXIMA_GOL + 8.0;
     }
 
@@ -1479,6 +1622,10 @@ public class MotorJuego {
     }
 
     private boolean intentarAtajadaPortero(Jugador portero, boolean local) {
+        if (!balonEnZonaPortero(local, balon.getCentroX(), balon.getCentroY())) {
+            return false;
+        }
+
         boolean amenazaReal = balonAmenazaArco(local);
         double distanciaActual = distanciaAlBalon(portero);
         if (!amenazaReal && distanciaActual > DISTANCIA_ATAJADA_PORTERO * 0.9) {
@@ -1502,7 +1649,10 @@ public class MotorJuego {
             double futuraX = balon.getCentroX() + balon.getVelocidadX() * frame;
             double futuraY = balon.getCentroY() + balon.getVelocidadY() * frame;
             double futuraAltura = alturaBalonEnFrames(frame);
-            if (futuraY < ConfiguracionJuego.Y_PORTERIA - 36 || futuraY > ConfiguracionJuego.Y_PORTERIA + ConfiguracionJuego.ALTO_PORTERIA + 36) {
+            if (!balonEnZonaPortero(local, futuraX, futuraY)) {
+                continue;
+            }
+            if (futuraY < ConfiguracionJuego.Y_PORTERIA - 24 || futuraY > ConfiguracionJuego.Y_PORTERIA + ConfiguracionJuego.ALTO_PORTERIA + 24) {
                 continue;
             }
 
@@ -1552,6 +1702,14 @@ public class MotorJuego {
         }
 
         return false;
+    }
+
+    private boolean balonEnZonaPortero(boolean arcoLocal, double x, double y) {
+        double referenciaX = arcoLocal ? ConfiguracionJuego.CAMPO_X_MIN : ConfiguracionJuego.CAMPO_X_MAX;
+        double distanciaX = Math.abs(x - referenciaX);
+        double centroPorteriaY = ConfiguracionJuego.Y_PORTERIA + ConfiguracionJuego.ALTO_PORTERIA / 2.0;
+        double distanciaY = Math.abs(y - centroPorteriaY);
+        return distanciaX <= ALCANCE_X_PORTERO && distanciaY <= ALCANCE_Y_PORTERO;
     }
 
     private double alturaBalonEnFrames(double frames) {
@@ -1685,7 +1843,25 @@ public class MotorJuego {
         }
         int distanciaManhattan = Math.abs(objetivoX - jugador.getX()) + Math.abs(objetivoY - jugador.getY());
         boolean disputa = poseedorBalon == jugador || distanciaAlBalon(jugador) < 120.0 || balonLibre;
-        return distanciaManhattan > 110 && disputa;
+        boolean oportunidadAtaque = poseedorBalon == jugador && distanciaHorizontalAlArco(jugador) < 360.0;
+        boolean retornoDefensivo = poseedorBalon != null && esJugadorLocal(poseedorBalon) != esJugadorLocal(jugador);
+        if (jugador.getStamina() < 18.0) {
+            return false;
+        }
+        return distanciaManhattan > 110 && (disputa || oportunidadAtaque || retornoDefensivo);
+    }
+
+    private boolean debeSprintarPortero(Jugador portero, boolean local, int objetivoX, int objetivoY) {
+        if (!portero.puedeSprintar()) {
+            return false;
+        }
+        int distanciaManhattan = Math.abs(objetivoX - portero.getX()) + Math.abs(objetivoY - portero.getY());
+        boolean amenaza = balonAmenazaArco(local)
+            || (!balonLibre && poseedorBalon != null && esJugadorLocal(poseedorBalon) != local && amenazaDeDisparoDelPoseedor(local));
+        if (portero.getStamina() < 14.0) {
+            return false;
+        }
+        return amenaza && distanciaManhattan > 36;
     }
 
     private void limitarEntidadAlPanel(EntidadJuego entidad) {

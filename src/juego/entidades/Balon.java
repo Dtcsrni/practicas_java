@@ -2,6 +2,7 @@ package juego.entidades;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Rectangle;
 
 // Balon con fisica 2D sobre el piso y una componente vertical simple.
 public class Balon extends EntidadJuego {
@@ -180,6 +181,13 @@ public class Balon extends EntidadJuego {
 
     public int getRadio() {
         return ancho / 2;
+    }
+
+    @Override
+    public Rectangle getBounds() {
+        // Caja mas ajustada al balon para reducir contactos "fantasma" en bordes.
+        int margen = Math.max(2, (int) Math.round(ancho * 0.22));
+        return boundsConMargen(margen, margen);
     }
 
     private void sincronizarPosicionEntera() {
