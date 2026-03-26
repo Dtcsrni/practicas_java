@@ -2,6 +2,9 @@ package juego.entidades;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GradientPaint;
+import java.awt.RenderingHints;
 
 // Moneda de mayor valor que aparece por tiempo limitado.
 public class MonedaEspecial extends Moneda {
@@ -56,11 +59,19 @@ public class MonedaEspecial extends Moneda {
         if (!activa) {
             return; // Inactiva: no se renderiza.
         }
-        g.setColor(new Color(255, 70, 180));
-        g.fillOval(x, y, ancho, alto);
-        g.setColor(new Color(255, 20, 100));
-        g.drawOval(x, y, ancho, alto);
-        g.setColor(Color.WHITE);
-        g.fillOval(x + ancho / 4, y + alto / 4, ancho / 2, alto / 2);
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        int pulso = (int) ((System.nanoTime() / 10_000_000L) % 8);
+        g2.setColor(new Color(255, 74, 184, 60));
+        g2.fillOval(x - 5 - pulso / 2, y - 5 - pulso / 2, ancho + 10 + pulso, alto + 10 + pulso);
+        g2.setPaint(new GradientPaint(x, y, new Color(255, 148, 238), x, y + alto, new Color(255, 52, 158)));
+        g2.fillOval(x, y, ancho, alto);
+        g2.setColor(new Color(170, 20, 102));
+        g2.drawOval(x, y, ancho, alto);
+        g2.setColor(new Color(255, 255, 255, 210));
+        g2.fillOval(x + ancho / 5, y + alto / 5, ancho / 3, alto / 3);
+        g2.setColor(new Color(255, 245, 255));
+        g2.drawString("3", x + ancho / 2 - 3, y + alto / 2 + 5);
+        g2.dispose();
     }
 }

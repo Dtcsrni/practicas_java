@@ -2,6 +2,9 @@ package juego.entidades;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GradientPaint;
+import java.awt.RenderingHints;
 import java.util.Random;
 
 // Bonus de puntaje basico que puede recolocarse en el campo.
@@ -16,15 +19,20 @@ public class Moneda extends EntidadJuego {
 
     @Override
     public void dibujar(Graphics g){
-        // Cuerpo principal.
-        g.setColor(Color.YELLOW);
-        g.fillOval(x, y, ancho, alto);
-        // Borde exterior.
-        g.setColor(Color.ORANGE);
-        g.drawOval(x, y, ancho, alto);
-        // Brillo central.
-        g.setColor(Color.WHITE);
-        g.fillOval(x + ancho/4, y + alto/4, ancho/2, alto/2);
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        int pulso = (int) ((System.nanoTime() / 13_000_000L) % 6);
+        g2.setColor(new Color(255, 180, 40, 45));
+        g2.fillOval(x - 3 - pulso / 2, y - 3 - pulso / 2, ancho + 6 + pulso, alto + 6 + pulso);
+        g2.setPaint(new GradientPaint(x, y, new Color(255, 244, 120), x, y + alto, new Color(255, 180, 35)));
+        g2.fillOval(x, y, ancho, alto);
+        g2.setColor(new Color(186, 108, 24));
+        g2.drawOval(x, y, ancho, alto);
+        g2.setColor(new Color(255, 255, 210, 180));
+        g2.fillOval(x + ancho / 5, y + alto / 5, ancho / 3, alto / 3);
+        g2.setColor(new Color(255, 239, 170));
+        g2.drawString("$", x + ancho / 2 - 3, y + alto / 2 + 5);
+        g2.dispose();
     }
 
     public void reposicionar(int anchoPanel, int altoPanel) {

@@ -16,6 +16,7 @@ public class EntradaJuego {
 
     private boolean pasePendiente;
     private boolean tiroPendiente;
+    private boolean barridaPendiente;
     private boolean pasePresionado;
     private boolean tiroPresionado;
     private long inicioCargaPaseNs;
@@ -42,6 +43,9 @@ public class EntradaJuego {
         if (codigoTecla == KeyEvent.VK_X && !tiroPresionado) {
             tiroPresionado = true;
             inicioCargaTiroNs = System.nanoTime();
+        }
+        if (codigoTecla == KeyEvent.VK_C) {
+            barridaPendiente = true;
         }
     }
 
@@ -99,6 +103,7 @@ public class EntradaJuego {
         correr = false;
         pasePendiente = false;
         tiroPendiente = false;
+        barridaPendiente = false;
         pasePresionado = false;
         tiroPresionado = false;
         factorPasePendiente = 0.0;
@@ -140,6 +145,12 @@ public class EntradaJuego {
     public boolean consumirTiro() {
         boolean valor = tiroPendiente;
         tiroPendiente = false;
+        return valor;
+    }
+
+    public boolean consumirBarrida() {
+        boolean valor = barridaPendiente;
+        barridaPendiente = false;
         return valor;
     }
 

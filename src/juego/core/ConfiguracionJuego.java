@@ -23,18 +23,19 @@ public final class ConfiguracionJuego {
     public static final int ALTO_PORTERIA = 188;
     public static final int Y_PORTERIA = (ALTO_PANEL - ALTO_PORTERIA) / 2;
     // Limites jugables dentro del panel.
-    public static final int CAMPO_X_MIN = 64;
-    public static final int CAMPO_Y_MIN = 54;
-    public static final int CAMPO_X_MAX = ANCHO_PANEL - 64;
-    public static final int CAMPO_Y_MAX = ALTO_PANEL - 54;
+    public static final int CAMPO_X_MIN = 42;
+    public static final int CAMPO_Y_MIN = 34;
+    public static final int CAMPO_X_MAX = ANCHO_PANEL - 42;
+    public static final int CAMPO_Y_MAX = ALTO_PANEL - 34;
 
     // Duracion de mensajes temporales.
     public static final int FRAMES_MENSAJE_GOL = FPS;
     public static final int FRAMES_MENSAJE_FALTA = (int) (FPS * 1.2);
 
-    // Aparicion y duracion de bonus.
-    public static final int INTERVALO_MONEDA_ESPECIAL = FPS * 8;
-    public static final int DURACION_MONEDA_ESPECIAL = FPS * 5;
+    // Hidratacion en banca (recarga cuando un jugador agotado llega al punto).
+    public static final int COOLDOWN_HIDRATACION_BANCA = FPS * 3;
+    public static final double RECARGA_HIDRATACION_BANCA = 18.0;
+    public static final int USOS_HIDRATACION_BANCA = 9;
     public static final int INTERVALO_TURBO = FPS * 10;
     public static final int DURACION_TURBO_EN_ESCENARIO = FPS * 6;
 

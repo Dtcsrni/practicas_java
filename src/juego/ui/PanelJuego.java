@@ -18,6 +18,8 @@ import juego.core.MotorJuego;
 import juego.sonido.GestorSonido;
 import juego.sonido.TipoSonido;
 
+import java.awt.Color;
+
 // Panel principal: recibe input, avanza la simulacion y delega el render.
 public class PanelJuego extends JPanel implements KeyListener, ActionListener {
     private final Timer timer;
@@ -30,6 +32,8 @@ public class PanelJuego extends JPanel implements KeyListener, ActionListener {
     public PanelJuego() {
         // Configuracion base del panel de juego.
         setPreferredSize(new Dimension(ConfiguracionJuego.ANCHO_PANEL, ConfiguracionJuego.ALTO_PANEL));
+        setBackground(new Color(6, 12, 20));
+        setDoubleBuffered(true);
         setFocusable(true);
         addKeyListener(this);
 
@@ -82,7 +86,7 @@ public class PanelJuego extends JPanel implements KeyListener, ActionListener {
         }
 
         // El movimiento solo se procesa durante el partido.
-        if (maquinaEstados.permiteActualizarMundo()) {
+        if (maquinaEstados.permiteActualizarMundo() && !motor.isModoEspectador()) {
             entrada.procesarPresion(codigo);
         }
     }
@@ -127,6 +131,12 @@ public class PanelJuego extends JPanel implements KeyListener, ActionListener {
             if (!maquinaEstados.permiteActualizarMundo()) {
                 entrada.limpiarMovimiento();
             }
+            return true;
+        }
+        // F2 alterna modo espectador/jugador.
+        if (codigo == KeyEvent.VK_F2) {
+            motor.alternarModoEspectador();
+            entrada.limpiarMovimiento();
             return true;
         }
         return false;
