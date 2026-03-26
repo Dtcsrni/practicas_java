@@ -1,6 +1,6 @@
 package juego.sonido;
 
-// Tipos de sonido sintetico usados por el juego.
+// Eventos sonoros que el gestor traduce a tonos sinteticos.
 public enum TipoSonido {
     INICIO,
     PASE,

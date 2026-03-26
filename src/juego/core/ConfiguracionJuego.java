@@ -1,41 +1,40 @@
 package juego.core;
 
-// Constantes globales del juego.
-// Centralizar estos valores evita "numeros magicos" dispersos.
+// Configuracion central del partido, la cancha y la ventana.
 public final class ConfiguracionJuego {
     private ConfiguracionJuego() {
-        // Clase utilitaria: no se instancia.
+        // Solo expone constantes.
     }
 
-    // Frecuencia de actualizacion.
+    // Loop principal.
     public static final int FPS = 60;
-    // Tamano total de la ventana/panel.
+    // Resolucion base.
     public static final int ANCHO_PANEL = 1440;
     public static final int ALTO_PANEL = 860;
 
-    // Reglas de marcador.
+    // Objetivo del partido.
     public static final int META_GOLES = 5;
-    // Geometria de porterias.
+    // Geometria de la porteria.
     public static final int ANCHO_PORTERIA = 14;
     public static final int ALTO_PORTERIA = 188;
     public static final int Y_PORTERIA = (ALTO_PANEL - ALTO_PORTERIA) / 2;
-    // Limites reales de la cancha dibujada (lineas de juego).
+    // Limites jugables dentro del panel.
     public static final int CAMPO_X_MIN = 64;
     public static final int CAMPO_Y_MIN = 54;
     public static final int CAMPO_X_MAX = ANCHO_PANEL - 64;
     public static final int CAMPO_Y_MAX = ALTO_PANEL - 54;
 
-    // Duracion de overlays temporales.
+    // Duracion de mensajes temporales.
     public static final int FRAMES_MENSAJE_GOL = FPS;
     public static final int FRAMES_MENSAJE_FALTA = (int) (FPS * 1.2);
 
-    // Aparicion y vida de bonus.
+    // Aparicion y duracion de bonus.
     public static final int INTERVALO_MONEDA_ESPECIAL = FPS * 8;
     public static final int DURACION_MONEDA_ESPECIAL = FPS * 5;
     public static final int INTERVALO_TURBO = FPS * 10;
     public static final int DURACION_TURBO_EN_ESCENARIO = FPS * 6;
 
-    // Posiciones base de formacion.
+    // Posiciones iniciales de la formacion 3 vs 3.
     public static final int POS_X_BASE_LOCAL = 160;
     public static final int POS_X_BASE_RIVAL = ANCHO_PANEL - 210;
     public static final int POS_Y_PORTERO = ALTO_PANEL / 2 - 26;

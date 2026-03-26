@@ -3,21 +3,21 @@ package juego.entidades;
 import java.awt.Color;
 import java.awt.Graphics;
 
-// Variante temporal de moneda con mayor puntaje.
+// Moneda de mayor valor que aparece por tiempo limitado.
 public class MonedaEspecial extends Moneda {
     private boolean activa;
-    private int framesRestantes; // Duración del efecto en frames
+    private int framesRestantes; // Tiempo visible restante.
 
     public MonedaEspecial(int tamano) {
         super(0, 0, tamano);
-        // Inicia desactivada y fuera de escena.
+        // Permanece oculta hasta que el motor la active.
         this.activa = false;
         this.framesRestantes = 0;
         desactivar();
     }
 
     public void activar(int x, int y, int duracionFrames) {
-        // Activa la moneda por tiempo limitado.
+        // La coloca en escena y reinicia su tiempo de vida.
         setX(x);
         setY(y);
         this.framesRestantes = duracionFrames;
@@ -25,7 +25,7 @@ public class MonedaEspecial extends Moneda {
     }
 
     public void actualizar() {
-        // Consume frames y se desactiva al expirar.
+        // Cuenta regresiva hasta desaparecer.
         if (activa && framesRestantes > 0) {
             framesRestantes--;
             if (framesRestantes <= 0) {
@@ -35,7 +35,7 @@ public class MonedaEspecial extends Moneda {
     }
 
     public void desactivar() {
-        // Oculta fuera de pantalla.
+        // Sale del campo y deja de dibujarse.
         activa = false;
         framesRestantes = 0;
         setX(-100);
@@ -48,13 +48,13 @@ public class MonedaEspecial extends Moneda {
 
     @Override
     public int getPuntos() {
-        return 3; // La moneda especial otorga más puntos
+        return 3; // Vale mas que la moneda comun.
     }
 
     @Override
     public void dibujar(Graphics g) {
         if (!activa) {
-            return; // No dibujar si no está activa
+            return; // Inactiva: no se renderiza.
         }
         g.setColor(new Color(255, 70, 180));
         g.fillOval(x, y, ancho, alto);

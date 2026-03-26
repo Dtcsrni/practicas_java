@@ -12,8 +12,7 @@ import juego.entidades.MonedaEspecial;
 import juego.entidades.Turbo;
 import juego.sonido.TipoSonido;
 
-// Motor principal de gameplay.
-// Coordina movimiento, IA, posesion/robo, disparos, marcador y bonus.
+// Nucleo de la simulacion: mueve jugadores, resuelve posesion y actualiza el partido.
 public class MotorJuego {
     private static final double FUERZA_PASE_MIN = 2.8;
     private static final double FUERZA_PASE_MAX = 4.6;
@@ -88,9 +87,9 @@ public class MotorJuego {
     private String ultimoEquipoGoleador;
 
     public MotorJuego() {
-        // Geometria de porterias dentro del panel.
+        // Geometria de gol usada para goles, travesano y saques.
         aleatorio = new Random();
-        // Arcos alineados a la linea de fondo real de la cancha.
+        // Los arcos coinciden con la linea final jugable.
         arcoIzquierdo = new Rectangle(
             ConfiguracionJuego.CAMPO_X_MIN - 2,
             ConfiguracionJuego.Y_PORTERIA,
@@ -104,7 +103,7 @@ public class MotorJuego {
             ConfiguracionJuego.ALTO_PORTERIA
         );
 
-        // Plantillas de equipos.
+        // Plantillas fijas del 3 vs 3.
         porteroLocal = new Jugador(
             "Memo",
             20,
@@ -181,7 +180,7 @@ public class MotorJuego {
     }
 
     public void reiniciarPartido() {
-        // Reinicio total de estadisticas y posicion inicial.
+        // Reinicio completo del partido y sus contadores.
         golesLocal = 0;
         golesRival = 0;
         puntosBonus = 0;
@@ -207,25 +206,25 @@ public class MotorJuego {
     public EventoJuego actualizar(EntradaJuego entrada) {
         framesAnimacion++;
 
-        // 1) Mueve jugadores (humano + IA).
+        // 1) Movimiento de jugadores.
         moverPrincipal(entrada);
         moverAliadoLocal();
         moverRivales();
         moverPorteros();
 
-        // 2) Actualiza estado interno (turbo/animaciones).
+        // 2) Estados temporales y animaciones.
         actualizarEstadoJugadores();
 
-        // 3) Resuelve posesion/disparo y comportamiento del balon.
+        // 3) Posesion, disparo y fisica del balon.
         actualizarPosesionYBalon(entrada);
 
-        // 4) Evalua gol.
+        // 4) Goles y salidas por lineas.
         EventoJuego eventoGol = verificarGol();
         if (eventoGol != EventoJuego.NINGUNO) {
             return eventoGol;
         }
 
-        // 5) Bonus y timers auxiliares.
+        // 5) Bonus y temporizadores auxiliares.
         actualizarMonedaEspecial();
         actualizarTurbo();
         if (cooldownRoboFrames > 0) {
@@ -260,7 +259,7 @@ public class MotorJuego {
     }
 
     private void moverAliadoLocal() {
-        // Aliado local acompana al poseedor o persigue balon.
+        // El aliado apoya al ataque local o persigue la pelota libre.
         int objetivoX;
         int objetivoY;
         if (!balonLibre && poseedorBalon == aliadoLocal) {
@@ -270,7 +269,7 @@ public class MotorJuego {
             objetivoX = poseedorBalon.getX() - 56;
             objetivoY = poseedorBalon.getY() + 22;
         } else if (!balonLibre && !poseedorEsLocal) {
-            // Si el rival trae posesion, no persigue en linea recta: marca una linea de pase.
+            // Frente a posesion rival, cubre una posible linea de pase.
             objetivoX = poseedorBalon.getX() - 92;
             objetivoY = poseedorBalon.getY() + 26;
         } else {
@@ -285,7 +284,7 @@ public class MotorJuego {
     }
 
     private void moverRivales() {
-        // Rivales presionan al poseedor local o apoyan ataque propio.
+        // Los rivales presionan, cubren espacios o apoyan al poseedor.
         int objetivoRivalUnoX;
         int objetivoRivalUnoY;
         int objetivoRivalDosX;
@@ -294,7 +293,7 @@ public class MotorJuego {
         if (!balonLibre && poseedorEsLocal) {
             objetivoRivalUnoX = poseedorBalon.getX() - 8;
             objetivoRivalUnoY = poseedorBalon.getY();
-            // Segundo rival cubre apoyo para evitar que ambos se apilen.
+            // El segundo rival cubre apoyo para no duplicar persecucion.
             objetivoRivalDosX = poseedorBalon.getX() - 148;
             objetivoRivalDosY = poseedorBalon.getY() + 78;
         } else if (balonLibre) {
@@ -331,7 +330,7 @@ public class MotorJuego {
     }
 
     private void moverPorteros() {
-        // Porteros con logica basica: se desplazan en su zona y achican.
+        // Los porteros se mueven en su zona siguiendo la jugada.
         Jugador objetivoReferencia = balonLibre ? jugadorMasCercanoAlBalon() : poseedorBalon;
 
         int xObjetivoLocal = 20;
@@ -359,7 +358,7 @@ public class MotorJuego {
     }
 
     private void actualizarPosesionYBalon(EntradaJuego entrada) {
-        // Destraba esquinas para evitar que la IA se congele persiguiendo el mismo punto.
+        // Evita bloqueos en esquinas cuando la pelota se queda muerta.
         resolverAtascoEnEsquina();
 
         if (balonLibre) {
@@ -389,7 +388,7 @@ public class MotorJuego {
             return;
         }
 
-        // Si un NPC queda con posesion en esquina, despeja automaticamente.
+        // Un NPC atrapado en la esquina despeja para reactivar la jugada.
         if (poseedorBalon != null && poseedorBalon != jugadorPrincipal && estaEnEsquina(poseedorBalon.getX(), poseedorBalon.getY(), 65)) {
             boolean equipoLocal = esJugadorLocal(poseedorBalon);
             double dirX = equipoLocal ? 2.8 : -2.8;
@@ -441,7 +440,7 @@ public class MotorJuego {
     }
 
     private void intentarCapturaBalonLibre() {
-        // Evita que el balon vuelva a pegarse en el mismo instante del pase/tiro.
+        // Evita recaptura instantanea justo despues de un pase o tiro.
         if (cooldownCapturaLibreFrames > 0) {
             return;
         }
@@ -485,7 +484,7 @@ public class MotorJuego {
             return false;
         }
 
-        // Si hay accion pero no tenemos posesion local, se descarta en este frame.
+        // Las acciones del usuario solo valen con posesion local.
         if (poseedorBalon == null || !poseedorEsLocal) {
             return false;
         }
@@ -563,8 +562,7 @@ public class MotorJuego {
     }
 
     private void ejecutarTiro(EntradaJuego entrada, double factorCarga) {
-        // El tiro prioriza apuntar a la porteria rival; la direccion del teclado
-        // solo modifica ligeramente el angulo para colocar el disparo.
+        // El tiro siempre prioriza el arco rival y usa el input como ajuste fino.
         double[] direccion = obtenerDireccionTiro(entrada, poseedorBalon);
         double fuerza = interpolarFuerza(FUERZA_TIRO_MIN, FUERZA_TIRO_MAX, factorCarga);
         double elevacion = 2.8 + factorCarga * 3.8;
@@ -572,7 +570,7 @@ public class MotorJuego {
     }
 
     private void ejecutarPase(EntradaJuego entrada, double factorCarga) {
-        // Pase con carga continua: de toque corto a pase largo.
+        // El pase usa la misma mecanica de carga, con elevacion mas baja.
         double[] direccion = obtenerDireccionNormalizada(entrada);
         double fuerza = interpolarFuerza(FUERZA_PASE_MIN, FUERZA_PASE_MAX, factorCarga);
         double elevacion = 1.0 + factorCarga * 1.6;
@@ -589,7 +587,7 @@ public class MotorJuego {
         double dy = entrada.getDireccionAccionY();
         double magnitud = Math.sqrt(dx * dx + dy * dy);
         if (magnitud < 0.0001) {
-            // Respaldo defensivo: juego hacia delante si no hay direccion valida.
+            // Sin direccion valida, el juego asume avance frontal.
             return new double[] { 1.0, 0.0 };
         }
         return new double[] { dx / magnitud, dy / magnitud };
@@ -718,7 +716,7 @@ public class MotorJuego {
         balon.setPosicion(nuevoX, nuevoY);
         limitarEntidadAlPanel(balon);
 
-        // Si el poseedor deja muy atras o muy lejos el balon, se pierde el control.
+        // Si la pelota se despega demasiado, la posesion se pierde.
         if (distanciaAlBalon(poseedorBalon) > DISTANCIA_MAXIMA_POSESION) {
             balonLibre = true;
             ultimoToqueLocal = poseedorEsLocal;
@@ -952,7 +950,7 @@ public class MotorJuego {
         boolean enRangoArco = centroY >= ConfiguracionJuego.Y_PORTERIA
             && centroY <= ConfiguracionJuego.Y_PORTERIA + ConfiguracionJuego.ALTO_PORTERIA;
 
-        // Salida por banda (lineas superior/inferior).
+        // Salida por banda.
         if (fueraSuperior || fueraInferior) {
             boolean saqueLocal = !ultimoToqueLocal;
             int ySaque = fueraSuperior ? ConfiguracionJuego.CAMPO_Y_MIN + 8 : ConfiguracionJuego.CAMPO_Y_MAX - 8;
@@ -965,15 +963,15 @@ public class MotorJuego {
             return;
         }
 
-        // Salida por linea de fondo (sin gol): meta o esquina.
+        // Salida por fondo sin gol: meta o esquina.
         if (fueraIzquierda && !enRangoArco) {
-            // Fondo izquierdo defendido por local.
+            // Fondo izquierdo defendido por el local.
             if (ultimoToqueLocal) {
-                // Ultimo toque local -> esquina rival.
+                // Ultimo toque local: esquina rival.
                 asignarSaqueEsquina(false, ConfiguracionJuego.CAMPO_X_MIN + 8, centroY < ConfiguracionJuego.ALTO_PANEL / 2 ? ConfiguracionJuego.CAMPO_Y_MIN + 8 : ConfiguracionJuego.CAMPO_Y_MAX - 8);
                 mostrarTextoSaque("Tiro de esquina rival");
             } else {
-                // Ultimo toque rival -> saque de meta local.
+                // Ultimo toque rival: saque de meta local.
                 asignarSaqueMeta(true);
                 mostrarTextoSaque("Saque de meta local");
             }
@@ -981,13 +979,13 @@ public class MotorJuego {
         }
 
         if (fueraDerecha && !enRangoArco) {
-            // Fondo derecho defendido por rival.
+            // Fondo derecho defendido por el rival.
             if (!ultimoToqueLocal) {
-                // Ultimo toque rival -> esquina local.
+                // Ultimo toque rival: esquina local.
                 asignarSaqueEsquina(true, ConfiguracionJuego.CAMPO_X_MAX - 8, centroY < ConfiguracionJuego.ALTO_PANEL / 2 ? ConfiguracionJuego.CAMPO_Y_MIN + 8 : ConfiguracionJuego.CAMPO_Y_MAX - 8);
                 mostrarTextoSaque("Tiro de esquina local");
             } else {
-                // Ultimo toque local -> saque de meta rival.
+                // Ultimo toque local: saque de meta rival.
                 asignarSaqueMeta(false);
                 mostrarTextoSaque("Saque de meta rival");
             }
@@ -1048,7 +1046,7 @@ public class MotorJuego {
     }
 
     private void reiniciarJugada(boolean saqueLocal) {
-        // Recoloca formaciones y define quien inicia con posesion tras gol/reinicio.
+        // Recoloca la formacion e inicia la siguiente jugada.
         jugadorPrincipal.setX(ConfiguracionJuego.POS_X_BASE_LOCAL);
         jugadorPrincipal.setY(ConfiguracionJuego.POS_Y_CAMPO_ARRIBA);
         aliadoLocal.setX(ConfiguracionJuego.POS_X_BASE_LOCAL + 45);
@@ -1076,7 +1074,7 @@ public class MotorJuego {
     }
 
     private void actualizarMonedaEspecial() {
-        // Bonus de puntaje temporal.
+        // Gestion de la moneda especial.
         contadorAparicionMonedaEspecial++;
 
         if (!monedaEspecial.estaActiva()) {
@@ -1098,7 +1096,7 @@ public class MotorJuego {
     }
 
     private void actualizarTurbo() {
-        // Bonus de velocidad temporal para el jugador principal.
+        // Gestion del turbo del jugador principal.
         contadorAparicionTurbo++;
 
         if (!turbo.estaActivo()) {
@@ -1127,7 +1125,7 @@ public class MotorJuego {
     }
 
     private void recolocarEntidadBonus(EntidadJuego entidad) {
-        // Reintentos acotados para posicion valida de bonus.
+        // Busca una posicion valida para bonus con intentos limitados.
         for (int intentos = 0; intentos < 100; intentos++) {
             int maxX = ConfiguracionJuego.ANCHO_PANEL - entidad.getAncho();
             int maxY = ConfiguracionJuego.ALTO_PANEL - entidad.getAlto();
@@ -1141,7 +1139,7 @@ public class MotorJuego {
     }
 
     private boolean posicionValidaParaBonus(EntidadJuego entidad) {
-        // Evita superposiciones con jugadores, balon y arcos.
+        // Evita solapes con entidades y zonas de arco.
         if (entidad.getX() < 0 || entidad.getY() < 0) {
             return false;
         }
@@ -1161,7 +1159,7 @@ public class MotorJuego {
     }
 
     private void limitarPorteroEnZona(Jugador portero, boolean local) {
-        // Mantiene porteros dentro de su "area" simplificada.
+        // Mantiene a cada portero dentro de su zona de accion.
         int xMin = local ? 6 : ConfiguracionJuego.ANCHO_PANEL - 86;
         int xMax = local ? 58 : ConfiguracionJuego.ANCHO_PANEL - 20;
         int yMin = ConfiguracionJuego.Y_PORTERIA - 12;
@@ -1182,7 +1180,7 @@ public class MotorJuego {
     }
 
     private void actualizarEstadoJugadores() {
-        // Procesa decremento de estados temporales (ej. turbo).
+        // Actualiza estados temporales de todos los jugadores.
         porteroLocal.actualizarEstado();
         jugadorPrincipal.actualizarEstado();
         aliadoLocal.actualizarEstado();
@@ -1190,7 +1188,7 @@ public class MotorJuego {
         rivalUno.actualizarEstado();
         rivalDos.actualizarEstado();
 
-        // Animacion de cada jugador segun movimiento.
+        // La animacion depende del ultimo desplazamiento de cada jugador.
         porteroLocal.actualizarAnimacion(movPorteroLocalX, movPorteroLocalY);
         jugadorPrincipal.actualizarAnimacion(movPrincipalX, movPrincipalY);
         aliadoLocal.actualizarAnimacion(movAliadoX, movAliadoY);
@@ -1200,7 +1198,7 @@ public class MotorJuego {
     }
 
     private int velocidadMovimiento(Jugador jugador) {
-        // Velocidad instantanea estimada usada para calcular robos.
+        // Velocidad estimada del frame usada en robos y disputas.
         if (jugador == jugadorPrincipal) {
             return Math.abs(movPrincipalX) + Math.abs(movPrincipalY);
         }
@@ -1286,12 +1284,12 @@ public class MotorJuego {
     }
 
     private boolean esJugadorLocal(Jugador jugador) {
-        // Clasifica equipo de un jugador.
+        // Distingue si el jugador pertenece al equipo local.
         return jugador == jugadorPrincipal || jugador == aliadoLocal || jugador == porteroLocal;
     }
 
     private int calcularPaso(int actual, int objetivo, int velocidadMaxima) {
-        // Paso discreto para acercarse a un objetivo sin exceder velocidad max.
+        // Avanza hacia un objetivo respetando la velocidad maxima.
         if (actual < objetivo) {
             return Math.min(velocidadMaxima, objetivo - actual);
         }
@@ -1302,7 +1300,7 @@ public class MotorJuego {
     }
 
     private void limitarEntidadAlPanel(EntidadJuego entidad) {
-        // Limite duro al rectangulo del panel.
+        // Limite duro dentro del panel visible.
         if (entidad.getX() < 0) {
             entidad.setX(0);
         }
@@ -1318,7 +1316,7 @@ public class MotorJuego {
     }
 
     public Jugador[] getLocales() {
-        // Orden estable para render/UI.
+        // Orden estable para render y HUD.
         return new Jugador[] { porteroLocal, jugadorPrincipal, aliadoLocal };
     }
 

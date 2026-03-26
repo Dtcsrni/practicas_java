@@ -5,7 +5,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 
-// Jugador renderizado por vectores (sin sprites) con estado de turbo.
+// Jugador vectorial con orientacion, animacion y estado de turbo.
 public class Jugador extends EntidadJuego {
     private String nombre;
     private int velocidad;
@@ -18,13 +18,12 @@ public class Jugador extends EntidadJuego {
     private int direccionX;
     private int direccionY;
 
-    // Constructor para inicializar el jugador
     public Jugador(int x, int y, int ancho, int alto, int velocidad) {
-        // Constructor de conveniencia con paleta por defecto.
+        // Atajo con nombre generico y paleta base.
         this("Jugador", x, y, ancho, alto, velocidad, Color.CYAN, Color.WHITE, Color.RED);
     }
 
-    // Constructor con colores personalizados para distinguir personajes
+    // Variante completa para diferenciar jugadores y equipos.
     public Jugador(int x, int y, int ancho, int alto, int velocidad, Color colorCuerpo, Color colorBorde, Color colorDetalle) {
         this("Jugador", x, y, ancho, alto, velocidad, colorCuerpo, colorBorde, colorDetalle);
     }
@@ -44,15 +43,14 @@ public class Jugador extends EntidadJuego {
     }
 
     public void mover(int dx, int dy) {
-        // Movimiento directo por delta.
+        // El motor resuelve colisiones y limites fuera de esta clase.
         x += dx;
         y += dy;
     }
 
-    // Método para dibujar al jugador
     @Override
     public void dibujar(Graphics g) {
-        // Dibujo vectorial estilizado.
+        // La pose intenta sugerir direccion y ritmo sin usar sprites.
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         int oscilacion = (int) Math.round(Math.sin(faseAnimacion) * 2.0);
@@ -72,17 +70,17 @@ public class Jugador extends EntidadJuego {
         int centroTorsoX = cuerpoX + cuerpoAncho / 2;
         int centroTorsoY = cuerpoY + cuerpoAlto / 2;
 
-        // Sombra suave para dar profundidad.
+        // Sombra de contacto con el piso.
         g2.setColor(new Color(0, 0, 0, 55));
         g2.fillOval(x + ancho / 4, y + alto - 4, ancho / 2, 6);
 
-        // Cabeza.
+        // Cabeza y contorno.
         g2.setColor(new Color(255, 220, 180));
         g2.fillOval(cabezaX, cabezaY, cabezaTam, cabezaTam);
         g2.setColor(colorBorde);
         g2.drawOval(cabezaX, cabezaY, cabezaTam, cabezaTam);
 
-        // Rostro orientado hacia la direccion actual.
+        // El rostro se desplaza levemente hacia el frente del jugador.
         g2.setColor(new Color(38, 24, 18));
         g2.fillOval(frenteCabezaX - 2, frenteCabezaY - 2, 4, 4);
         if (Math.abs(direccionX) > 0) {
@@ -91,13 +89,13 @@ public class Jugador extends EntidadJuego {
             g2.drawLine(frenteCabezaX - 2, frenteCabezaY + 3, frenteCabezaX + 2, frenteCabezaY + 3);
         }
 
-        // Torso (camiseta).
+        // Torso.
         g2.setColor(colorCuerpo);
         g2.fillRoundRect(cuerpoX, cuerpoY, cuerpoAncho, cuerpoAlto, 8, 8);
         g2.setColor(colorBorde);
         g2.drawRoundRect(cuerpoX, cuerpoY, cuerpoAncho, cuerpoAlto, 8, 8);
 
-        // Franja del uniforme marcada segun la direccion de frente.
+        // La franja cambia de orientacion para reforzar el frente.
         g2.setColor(colorDetalle);
         if (Math.abs(direccionX) >= Math.abs(direccionY)) {
             int franjaX = direccionX >= 0 ? cuerpoX + cuerpoAncho / 2 : cuerpoX + cuerpoAncho / 2 - 4;
@@ -107,7 +105,7 @@ public class Jugador extends EntidadJuego {
             g2.fillRect(cuerpoX + 2, franjaY, cuerpoAncho - 4, 4);
         }
 
-        // Brazos.
+        // Brazos con oscilacion ligera al correr.
         g2.setColor(colorDetalle);
         g2.drawLine(
             cuerpoX + 1,
@@ -122,7 +120,7 @@ public class Jugador extends EntidadJuego {
             cuerpoY + 14 - brazoOscilacion - direccionY
         );
 
-        // Indica el frente del jugador como en una vista isometrica simple.
+        // Trazo de direccion para reforzar la lectura visual del frente.
         g2.setColor(colorBorde);
         g2.drawLine(
             centroTorsoX,
@@ -131,7 +129,7 @@ public class Jugador extends EntidadJuego {
             centroTorsoY + direccionY * Math.max(4, alto / 6)
         );
 
-        // Piernas.
+        // Piernas con separacion variable segun la animacion.
         int piernaY = cuerpoY + cuerpoAlto;
         int separacionPierna = (int) Math.round(Math.sin(faseAnimacion) * 2.0);
         g2.setColor(new Color(30, 30, 30));
@@ -148,16 +146,16 @@ public class Jugador extends EntidadJuego {
 
     public void activarTurbo(int velocidadExtra, int duracionFrames)
     {
-        // Aplica boost temporal de velocidad.
+        // El turbo suma velocidad durante un numero finito de frames.
         velocidad = velocidadBase + velocidadExtra;
         framesTurboRestantes = duracionFrames;
     }
     public void actualizarEstado(){
-        // Cuenta regresiva del turbo.
+        // Consume la duracion pendiente del turbo.
         if (framesTurboRestantes > 0) {
             framesTurboRestantes--;
             if (framesTurboRestantes == 0) {
-                velocidad = velocidadBase; // Volver a la velocidad normal
+                velocidad = velocidadBase; // Recupera la velocidad base.
             }
         }
     }
@@ -171,12 +169,10 @@ public class Jugador extends EntidadJuego {
         return velocidadBase;
     }
     public int setVelocidadBase(int velocidadBase){
-        // Mantiene firma existente del proyecto.
+        // Mantiene la API ya usada por el proyecto.
         this.velocidadBase = velocidadBase;
         return velocidadBase;
     }
-
-    // Getters y setters para acceder y modificar los atributos de forma controlada
 
     public int getVelocidad() {
         return velocidad;
@@ -195,7 +191,7 @@ public class Jugador extends EntidadJuego {
     }
 
     public void actualizarAnimacion(int dx, int dy) {
-        // Si se mueve, anima mas rapido; si no, queda respiracion suave.
+        // En movimiento el ciclo avanza rapido; quieto, solo respira.
         int actividad = Math.abs(dx) + Math.abs(dy);
         if (actividad > 0) {
             faseAnimacion += 0.35;

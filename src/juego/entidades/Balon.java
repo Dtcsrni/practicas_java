@@ -3,7 +3,7 @@ package juego.entidades;
 import java.awt.Color;
 import java.awt.Graphics;
 
-// Entidad del balon con fisica ligera (inercia, friccion y rebote).
+// Balon con fisica 2D sobre el piso y una componente vertical simple.
 public class Balon extends EntidadJuego {
     private double posX;
     private double posY;
@@ -24,7 +24,7 @@ public class Balon extends EntidadJuego {
 
     public Balon(int x, int y, int tamano) {
         super(x, y, tamano, tamano);
-        // Se guarda tambien en double para evitar perdida por redondeo.
+        // La posicion real vive en double para no perder suavidad.
         posX = x;
         posY = y;
         velocidadX = 0.0;
@@ -35,7 +35,7 @@ public class Balon extends EntidadJuego {
     }
 
     public void reiniciarEnCentro(int anchoPanel, int altoPanel) {
-        // Centra balon y limpia velocidad.
+        // Vuelve al centro y elimina cualquier movimiento residual.
         posX = (anchoPanel - ancho) / 2.0;
         posY = (altoPanel - alto) / 2.0;
         velocidadX = 0.0;
@@ -51,7 +51,7 @@ public class Balon extends EntidadJuego {
     }
 
     public void impulsar(double impulsoX, double impulsoY, double impulsoZ) {
-        // Suma impulso y recorta a velocidad maxima estable.
+        // Aplica impulso horizontal y, opcionalmente, elevacion.
         velocidadX += impulsoX;
         velocidadY += impulsoY;
         velocidadZ += impulsoZ;
@@ -59,7 +59,7 @@ public class Balon extends EntidadJuego {
     }
 
     public void actualizarFisica(int anchoPanel, int altoPanel) {
-        // Integracion simple: posicion += velocidad.
+        // Integra movimiento horizontal y altura del balon.
         posX += velocidadX;
         posY += velocidadY;
         altura += velocidadZ;
@@ -87,7 +87,7 @@ public class Balon extends EntidadJuego {
             }
         }
 
-        // Rebote contra límites del panel.
+        // Rebota contra los bordes externos del panel.
         if (posX < 0) {
             posX = 0;
             velocidadX = -velocidadX * REBOTE;
@@ -115,7 +115,7 @@ public class Balon extends EntidadJuego {
     }
 
     public void detener() {
-        // Util para reinicios/control de posesion.
+        // Deja el balon completamente quieto y en el piso.
         velocidadX = 0.0;
         velocidadY = 0.0;
         velocidadZ = 0.0;
@@ -178,13 +178,13 @@ public class Balon extends EntidadJuego {
     }
 
     private void sincronizarPosicionEntera() {
-        // La logica usa doubles; el render/collision usa enteros.
+        // La simulacion usa doubles; render y colisiones usan enteros.
         x = (int) Math.round(posX);
         y = (int) Math.round(posY);
     }
 
     private void limitarVelocidad() {
-        // Evita valores extremos no jugables.
+        // Limita velocidades a un rango estable para el gameplay.
         if (velocidadX > VELOCIDAD_MAXIMA) {
             velocidadX = VELOCIDAD_MAXIMA;
         } else if (velocidadX < -VELOCIDAD_MAXIMA) {
@@ -206,7 +206,7 @@ public class Balon extends EntidadJuego {
 
     @Override
     public void dibujar(Graphics g) {
-        // Balon estilo clasico: sombra en piso y altura visible.
+        // La sombra marca el punto en el piso; el sprite se desplaza en altura.
         int yRender = getYRender();
         int sombraAncho = Math.max(6, ancho - (int) Math.round(altura * 0.10));
         int sombraAlto = Math.max(4, alto / 3 - (int) Math.round(altura * 0.03));

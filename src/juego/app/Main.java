@@ -2,10 +2,10 @@ package juego.app;
 
 import juego.ui.VentanaJuego;
 
-// Punto de entrada: crea la ventana principal y arranca el juego.
+// Punto de entrada del juego.
 public class Main {
     public static void main(String[] args){
-        // El resto del ciclo de juego vive dentro de Swing (Panel + Timer).
+        // La ventana inicializa la UI y el loop basado en Swing.
         new VentanaJuego();
     }
 }

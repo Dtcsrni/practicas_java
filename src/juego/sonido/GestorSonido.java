@@ -8,7 +8,7 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 
-// Sintetiza tonos simples para evitar dependencias de archivos externos.
+// Genera tonos sinteticos para no depender de archivos de audio externos.
 public class GestorSonido {
     private static final float SAMPLE_RATE = 22050.0f;
 
@@ -66,7 +66,7 @@ public class GestorSonido {
                 }
             }
         } catch (LineUnavailableException ignored) {
-            // Si el sistema no tiene salida de audio disponible, el juego sigue funcionando.
+            // El audio es opcional: un fallo aqui no debe romper el juego.
         }
     }
 

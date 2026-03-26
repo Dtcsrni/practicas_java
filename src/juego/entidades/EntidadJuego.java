@@ -3,7 +3,7 @@ package juego.entidades;
 import java.awt.Graphics;
 import java.awt.Rectangle;
 
-// Base comun para todos los objetos del juego con posicion y tamano.
+// Base comun para cualquier objeto dibujable con posicion rectangular.
 public abstract class EntidadJuego {
     protected int x;
     protected int y;
@@ -17,7 +17,7 @@ public abstract class EntidadJuego {
     }
 
     public Rectangle getBounds() {
-        // Rectangulo base para colisiones AABB.
+        // Colision rectangular simple usada en toda la simulacion.
         return new Rectangle(x, y, ancho, alto);
     }
 

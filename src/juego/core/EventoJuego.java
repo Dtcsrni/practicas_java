@@ -1,6 +1,6 @@
 package juego.core;
 
-// Eventos de gameplay que disparan cambios en la maquina de estados.
+// Eventos puntuales que la simulacion emite hacia la maquina de estados.
 public enum EventoJuego {
     NINGUNO,
     GOL_LOCAL,

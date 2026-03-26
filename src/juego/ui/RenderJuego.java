@@ -15,20 +15,19 @@ import juego.core.MaquinaEstadosJuego;
 import juego.core.MotorJuego;
 import juego.entidades.Jugador;
 
-// Renderizador 2D del juego.
-// Su unica responsabilidad es dibujar; no altera estado de logica.
+// Renderizador 2D puro: dibuja escena, HUD y overlays sin mutar la logica.
 public class RenderJuego {
     public void dibujarEscena(Graphics g, MotorJuego motor, MaquinaEstadosJuego maquinaEstados, int frameAnimacion) {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // Capas base.
+        // Fondo y cancha.
         dibujarEntornoUrbano(g2, frameAnimacion);
         dibujarCancha(g2, frameAnimacion);
         dibujarDecoracionUrbana(g2, frameAnimacion);
         dibujarAtmosfera(g2, frameAnimacion);
 
-        // Entidades de juego.
+        // Entidades y etiquetas.
         motor.getBalon().dibujar(g2);
         motor.getMonedaEspecial().dibujar(g2);
         motor.getTurbo().dibujar(g2);
@@ -47,7 +46,7 @@ public class RenderJuego {
     }
 
     private void dibujarEntornoUrbano(Graphics2D g, int frameAnimacion) {
-        // Fondo general y bordes del entorno.
+        // Fondo del estadio y marco exterior.
         g.setPaint(new GradientPaint(0, 0, new Color(12, 20, 28), 0, ConfiguracionJuego.ALTO_PANEL, new Color(45, 36, 24)));
         g.fillRect(0, 0, ConfiguracionJuego.ANCHO_PANEL, ConfiguracionJuego.ALTO_PANEL);
 
@@ -56,7 +55,7 @@ public class RenderJuego {
         g.setColor(new Color(255, 230, 170, 22));
         g.fillOval(ConfiguracionJuego.ANCHO_PANEL - 260, -80, 220, 180);
 
-        // Muros laterales de la canchita.
+        // Bordes urbanos laterales.
         g.setColor(new Color(76, 72, 67));
         g.fillRect(0, 0, 36, ConfiguracionJuego.ALTO_PANEL);
         g.fillRect(ConfiguracionJuego.ANCHO_PANEL - 36, 0, 36, ConfiguracionJuego.ALTO_PANEL);
@@ -66,7 +65,7 @@ public class RenderJuego {
 
         dibujarGradas(g, frameAnimacion);
 
-        // Malla superior/inferior.
+        // Malla superior e inferior para cerrar visualmente la cancha.
         g.setColor(new Color(95, 95, 95));
         int desplazamiento = frameAnimacion % 16;
         for (int x = -16; x < ConfiguracionJuego.ANCHO_PANEL + 16; x += 16) {
@@ -80,7 +79,7 @@ public class RenderJuego {
     }
 
     private void dibujarCancha(Graphics2D g, int frameAnimacion) {
-        // Pintura de area jugable y lineas principales.
+        // Cesped, marcas reglamentarias y porterias.
         g.setColor(new Color(44, 132, 58));
         g.fillRect(
             ConfiguracionJuego.CAMPO_X_MIN - 6,
@@ -184,7 +183,7 @@ public class RenderJuego {
     }
 
     private void dibujarDecoracionUrbana(Graphics2D g, int frameAnimacion) {
-        // Grafiti simple estilo urbano mexicano.
+        // Decoracion urbana para reforzar el tono del juego.
         g.setColor(new Color(196, 68, 155));
         g.setFont(new Font("Dialog", Font.BOLD, 24));
         g.drawString("BARRIO FC", 42, 48);
@@ -259,7 +258,7 @@ public class RenderJuego {
     }
 
     private void dibujarHUD(Graphics2D g, MotorJuego motor) {
-        // HUD informativo para marcador y estado basico.
+        // HUD de marcador, posesion y estado del balon.
         g.setPaint(new GradientPaint(18, 18, new Color(6, 10, 13, 210), 460, 230, new Color(20, 40, 34, 180)));
         g.fillRoundRect(24, 22, 470, 232, 22, 22);
         g.setColor(new Color(255, 255, 255, 52));
@@ -283,7 +282,7 @@ public class RenderJuego {
     }
 
     private void dibujarOverlayEstado(Graphics2D g, EstadoJuego estado, String mensaje, MotorJuego motor) {
-        // Overlays de menu, pausa y resultado.
+        // Capas de menu, pausa y mensajes de resultado.
         if (estado == EstadoJuego.JUGANDO) {
             return;
         }

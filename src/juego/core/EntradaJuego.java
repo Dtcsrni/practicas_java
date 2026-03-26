@@ -2,7 +2,7 @@ package juego.core;
 
 import java.awt.event.KeyEvent;
 
-// Encapsula el estado del teclado para desacoplar input y logica.
+// Traduce teclado crudo a intenciones de movimiento, pase y tiro.
 public class EntradaJuego {
     private static final long CARGA_MAX_NS = 1_200_000_000L;
     private static final double FACTOR_MIN_CARGA = 0.35;
@@ -26,7 +26,7 @@ public class EntradaJuego {
     private int ultimaDireccionY = 0;
 
     public void procesarPresion(int codigoTecla) {
-        // Activa banderas de direccion cuando una tecla se presiona.
+        // Marca direcciones activas.
         if (codigoTecla == KeyEvent.VK_W || codigoTecla == KeyEvent.VK_UP) {
             arriba = true;
         }
@@ -41,7 +41,7 @@ public class EntradaJuego {
         }
         actualizarUltimaDireccion();
 
-        // Inicia carga de pase/tiro al presionar.
+        // Empieza a cargar la accion al mantener la tecla.
         if (codigoTecla == KeyEvent.VK_SPACE && !pasePresionado) {
             pasePresionado = true;
             inicioCargaPaseNs = System.nanoTime();
@@ -53,7 +53,7 @@ public class EntradaJuego {
     }
 
     public void procesarLiberacion(int codigoTecla) {
-        // Desactiva banderas cuando se suelta la tecla.
+        // Libera direcciones activas.
         if (codigoTecla == KeyEvent.VK_W || codigoTecla == KeyEvent.VK_UP) {
             arriba = false;
         }
@@ -68,7 +68,7 @@ public class EntradaJuego {
         }
         actualizarUltimaDireccion();
 
-        // Ejecuta accion al soltar, con fuerza proporcional al tiempo de carga.
+        // Dispara la accion usando el tiempo de carga acumulado.
         if (codigoTecla == KeyEvent.VK_SPACE && pasePresionado) {
             pasePresionado = false;
             pasePendiente = true;
@@ -82,7 +82,7 @@ public class EntradaJuego {
     }
 
     public int calcularDeltaX(int velocidad) {
-        // Convierte estado de teclas en desplazamiento horizontal.
+        // Convierte el input horizontal en delta por frame.
         int dx = 0;
         if (izquierda) {
             dx -= velocidad;
@@ -94,7 +94,7 @@ public class EntradaJuego {
     }
 
     public int calcularDeltaY(int velocidad) {
-        // Convierte estado de teclas en desplazamiento vertical.
+        // Convierte el input vertical en delta por frame.
         int dy = 0;
         if (arriba) {
             dy -= velocidad;
@@ -106,7 +106,7 @@ public class EntradaJuego {
     }
 
     public void limpiarMovimiento() {
-        // Util cuando hay cambio de estado (pausa, gol, reinicio).
+        // Evita arrastres de input al pausar, anotar o reiniciar.
         arriba = false;
         abajo = false;
         izquierda = false;

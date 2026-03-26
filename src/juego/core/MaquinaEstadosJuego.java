@@ -1,13 +1,13 @@
 package juego.core;
 
-// Gestiona transiciones de estado de forma centralizada.
+// Centraliza las transiciones de UI entre menu, partido y mensajes.
 public class MaquinaEstadosJuego {
     private EstadoJuego estadoActual;
     private int framesEstado;
     private String mensajeTemporal;
 
     public MaquinaEstadosJuego() {
-        // El juego inicia en pantalla de inicio.
+        // El juego siempre arranca en el menu inicial.
         estadoActual = EstadoJuego.INICIO;
         framesEstado = 0;
         mensajeTemporal = "";
@@ -22,12 +22,12 @@ public class MaquinaEstadosJuego {
     }
 
     public boolean permiteActualizarMundo() {
-        // Solo en estado JUGANDO se actualiza la simulacion.
+        // La simulacion solo corre durante el partido activo.
         return estadoActual == EstadoJuego.JUGANDO;
     }
 
     public void iniciarDesdeInicio() {
-        // Entrada controlada al juego desde menu inicial.
+        // Entra al partido solo desde la pantalla inicial.
         if (estadoActual == EstadoJuego.INICIO) {
             cambiarEstado(EstadoJuego.JUGANDO);
             mensajeTemporal = "";
@@ -35,7 +35,7 @@ public class MaquinaEstadosJuego {
     }
 
     public void alternarPausa() {
-        // Toggle de pausa sin perder el estado previo de partido.
+        // Alterna entre pausa y partido sin reiniciar la simulacion.
         if (estadoActual == EstadoJuego.JUGANDO) {
             cambiarEstado(EstadoJuego.PAUSADO);
         } else if (estadoActual == EstadoJuego.PAUSADO) {
@@ -44,14 +44,14 @@ public class MaquinaEstadosJuego {
     }
 
     public void reiniciar() {
-        // Reinicio de flujo completo hacia menu inicial.
+        // Reinicia la interfaz al estado inicial.
         cambiarEstado(EstadoJuego.INICIO);
         framesEstado = 0;
         mensajeTemporal = "";
     }
 
     public void procesarEventoJuego(EventoJuego evento) {
-        // Traduce eventos de gameplay a transiciones visuales.
+        // Convierte eventos del motor en estados visibles para el jugador.
         if (evento == EventoJuego.GOL_LOCAL) {
             cambiarEstado(EstadoJuego.GOL);
             framesEstado = ConfiguracionJuego.FRAMES_MENSAJE_GOL;
@@ -88,7 +88,7 @@ public class MaquinaEstadosJuego {
     }
 
     public void actualizar() {
-        // Estados temporales caducan por frames y regresan a JUGANDO.
+        // Los overlays temporales expiran y devuelven el control al partido.
         if (estadoActual == EstadoJuego.GOL || estadoActual == EstadoJuego.FALTA) {
             framesEstado--;
             if (framesEstado <= 0) {
@@ -99,7 +99,7 @@ public class MaquinaEstadosJuego {
     }
 
     private void cambiarEstado(EstadoJuego nuevoEstado) {
-        // Punto unico de cambio de estado.
+        // Unico punto de mutacion del estado visual.
         estadoActual = nuevoEstado;
     }
 }

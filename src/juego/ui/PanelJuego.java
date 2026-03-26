@@ -18,10 +18,7 @@ import juego.core.MotorJuego;
 import juego.sonido.GestorSonido;
 import juego.sonido.TipoSonido;
 
-// Orquestador de la capa UI:
-// - recibe teclado
-// - avanza logica por timer
-// - delega render
+// Panel principal: recibe input, avanza la simulacion y delega el render.
 public class PanelJuego extends JPanel implements KeyListener, ActionListener {
     private final Timer timer;
     private final EntradaJuego entrada;
@@ -31,19 +28,19 @@ public class PanelJuego extends JPanel implements KeyListener, ActionListener {
     private final GestorSonido gestorSonido;
 
     public PanelJuego() {
-        // Configuracion visual del panel.
+        // Configuracion base del panel de juego.
         setPreferredSize(new Dimension(ConfiguracionJuego.ANCHO_PANEL, ConfiguracionJuego.ALTO_PANEL));
         setFocusable(true);
         addKeyListener(this);
 
-        // Dependencias principales del loop.
+        // Dependencias del loop principal.
         entrada = new EntradaJuego();
         maquinaEstados = new MaquinaEstadosJuego();
         motor = new MotorJuego();
         renderizador = new RenderJuego();
         gestorSonido = new GestorSonido();
 
-        // Timer de Swing que simula el "game loop".
+        // Swing Timer usado como game loop.
         timer = new Timer(1000 / ConfiguracionJuego.FPS, this);
         timer.start();
     }
@@ -51,27 +48,27 @@ public class PanelJuego extends JPanel implements KeyListener, ActionListener {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        // Dibuja toda la escena según estado actual.
+        // Render completo del frame actual.
         renderizador.dibujarEscena(g, motor, maquinaEstados, motor.getFramesAnimacion());
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        // 1) Actualiza transiciones de estado.
+        // 1) Actualiza estados temporales de la UI.
         maquinaEstados.actualizar();
 
-        // 2) Si el estado lo permite, avanza simulacion.
+        // 2) Avanza la simulacion solo si el estado lo permite.
         if (maquinaEstados.permiteActualizarMundo()) {
             EventoJuego evento = motor.actualizar(entrada);
             maquinaEstados.procesarEventoJuego(evento);
-            // Limpia input en eventos para evitar arrastre no deseado.
+            // Limpia arrastres de input tras eventos fuertes.
             if (evento != EventoJuego.NINGUNO) {
                 entrada.limpiarMovimiento();
             }
         }
         reproducirSonidosPendientes();
 
-        // 3) Solicita redibujado.
+        // 3) Solicita el repintado del frame.
         repaint();
     }
 
@@ -79,14 +76,14 @@ public class PanelJuego extends JPanel implements KeyListener, ActionListener {
     public void keyPressed(KeyEvent e) {
         int codigo = e.getKeyCode();
 
-        // Enter inicia la partida desde menu.
+        // ENTER inicia la partida desde el menu.
         if (codigo == KeyEvent.VK_ENTER) {
             maquinaEstados.iniciarDesdeInicio();
             gestorSonido.reproducir(TipoSonido.INICIO);
             return;
         }
 
-        // R reinicia logica y estado visual.
+        // R reinicia partido y estado visual.
         if (codigo == KeyEvent.VK_R) {
             motor.reiniciarPartido();
             maquinaEstados.reiniciar();
@@ -95,7 +92,7 @@ public class PanelJuego extends JPanel implements KeyListener, ActionListener {
             return;
         }
 
-        // P alterna pausa.
+        // P pausa o reanuda.
         if (codigo == KeyEvent.VK_P) {
             maquinaEstados.alternarPausa();
             if (!maquinaEstados.permiteActualizarMundo()) {
@@ -104,7 +101,7 @@ public class PanelJuego extends JPanel implements KeyListener, ActionListener {
             return;
         }
 
-        // Solo captura movimiento si estamos en estado jugable.
+        // El movimiento solo se procesa durante el partido.
         if (maquinaEstados.permiteActualizarMundo()) {
             entrada.procesarPresion(codigo);
         }
@@ -112,13 +109,13 @@ public class PanelJuego extends JPanel implements KeyListener, ActionListener {
 
     @Override
     public void keyReleased(KeyEvent e) {
-        // Sin condiciones de estado: siempre soltar tecla limpia bandera.
+        // Soltar tecla siempre limpia su bandera asociada.
         entrada.procesarLiberacion(e.getKeyCode());
     }
 
     @Override
     public void keyTyped(KeyEvent e) {
-        // No se utiliza.
+        // Swing exige este metodo, pero no se necesita.
     }
 
     private void reproducirSonidosPendientes() {

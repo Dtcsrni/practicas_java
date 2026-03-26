@@ -1,6 +1,6 @@
 package juego.core;
 
-// Estados de alto nivel del flujo del juego.
+// Estados globales visibles para la UI y el loop principal.
 public enum EstadoJuego {
     INICIO,
     JUGANDO,
