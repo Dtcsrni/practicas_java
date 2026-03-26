@@ -5,6 +5,8 @@ import java.awt.Graphics;
 
 // Balon con fisica 2D sobre el piso y una componente vertical simple.
 public class Balon extends EntidadJuego {
+    // La fisica del balon separa posicion horizontal y altura para simular
+    // piso, rebote y "globos" sin usar un motor fisico completo.
     private double posX;
     private double posY;
     private double velocidadX;
@@ -65,6 +67,7 @@ public class Balon extends EntidadJuego {
         altura += velocidadZ;
         velocidadZ -= GRAVEDAD;
 
+        // La friccion va apagando el desplazamiento sobre el pasto.
         velocidadX *= FRICCION;
         velocidadY *= FRICCION;
         if (Math.abs(velocidadX) < VELOCIDAD_MINIMA) {
@@ -80,6 +83,7 @@ public class Balon extends EntidadJuego {
 
         if (altura < 0.0) {
             altura = 0.0;
+            // Cuando toca piso, parte de la energia vertical se conserva como rebote.
             if (Math.abs(velocidadZ) > VELOCIDAD_VERTICAL_MINIMA) {
                 velocidadZ = -velocidadZ * REBOTE_VERTICAL;
             } else {
@@ -155,6 +159,7 @@ public class Balon extends EntidadJuego {
     }
 
     public boolean estaControlableEnPiso() {
+        // Este umbral se usa en MotorJuego para decidir si un jugador puede "domar" la pelota.
         return altura <= 8.0 && Math.abs(velocidadZ) <= 1.0;
     }
 

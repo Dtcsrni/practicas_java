@@ -8,9 +8,9 @@ public final class ConfiguracionJuego {
 
     // Loop principal.
     public static final int FPS = 60;
-    // Resolucion base.
-    public static final int ANCHO_PANEL = 1440;
-    public static final int ALTO_PANEL = 860;
+    // Resolucion base del panel. Se mantiene claramente por debajo del maximo Full HD.
+    public static final int ANCHO_PANEL = 1280;
+    public static final int ALTO_PANEL = 720;
 
     // Objetivo del partido.
     public static final int META_GOLES = 5;

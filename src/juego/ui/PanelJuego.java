@@ -54,6 +54,7 @@ public class PanelJuego extends JPanel implements KeyListener, ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
+        // Este metodo es el "tick" del juego: Swing lo invoca a la tasa de FPS configurada.
         // 1) Actualiza estados temporales de la UI.
         maquinaEstados.actualizar();
 
