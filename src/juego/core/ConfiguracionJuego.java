@@ -13,7 +13,7 @@ public final class ConfiguracionJuego {
     public static final int ALTO_PANEL = 720;
 
     // Objetivo del partido.
-    public static final int META_GOLES = 5;
+    public static final int META_GOLES = 8;
     // Geometria de la porteria.
     public static final int ANCHO_PORTERIA = 14;
     public static final int ALTO_PORTERIA = 188;
