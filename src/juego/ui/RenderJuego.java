@@ -8,6 +8,7 @@ import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.List;
 import juego.core.ConfiguracionJuego;
 import juego.core.EntradaJuego;
 import juego.core.EstadoJuego;
+import juego.core.GeometriaCancha;
 import juego.core.MaquinaEstadosJuego;
 import juego.core.MotorJuego;
 import juego.entidades.Jugador;
@@ -35,7 +37,7 @@ public class RenderJuego {
 
         dibujarCielo(g2);
         dibujarEntornoUrbano(g2);
-        dibujarCancha(g2, frameAnimacion);
+        dibujarCancha(g2, motor.getCancha(), frameAnimacion);
         dibujarBanca(g2);
 
         motor.getHidratacionBanca().dibujar(g2);
@@ -46,6 +48,7 @@ public class RenderJuego {
         dibujarParticulasJuego(g2, motor);
         dibujarEtiquetasJugadores(g2, motor);
         dibujarIndicadorArbitral(g2, motor);
+        dibujarNarracionEnPantalla(g2, motor);
 
         dibujarHUD(g2, motor, entrada);
         dibujarAnimacionSorteoMoneda(g2, motor);
@@ -100,6 +103,7 @@ public class RenderJuego {
     }
 
     private void dibujarEntornoUrbano(Graphics2D g) {
+        GeometriaCancha cancha = ConfiguracionJuego.MAPA_CANCHA;
         g.setPaint(new GradientPaint(0, 0, new Color(62, 66, 72), 0, ConfiguracionJuego.ALTO_PANEL, new Color(44, 46, 52)));
         g.fillRect(0, 0, 52, ConfiguracionJuego.ALTO_PANEL);
         g.fillRect(ConfiguracionJuego.ANCHO_PANEL - 52, 0, 52, ConfiguracionJuego.ALTO_PANEL);
@@ -118,8 +122,8 @@ public class RenderJuego {
         dibujarGradas(g);
 
         g.setColor(new Color(0, 0, 0, 68));
-        g.fillRect(0, ConfiguracionJuego.CAMPO_Y_MIN - 14, ConfiguracionJuego.ANCHO_PANEL, 10);
-        g.fillRect(0, ConfiguracionJuego.CAMPO_Y_MAX + 4, ConfiguracionJuego.ANCHO_PANEL, 10);
+        g.fillRect(0, cancha.getCampoYMin() - 14, ConfiguracionJuego.ANCHO_PANEL, 10);
+        g.fillRect(0, cancha.getCampoYMax() + 4, ConfiguracionJuego.ANCHO_PANEL, 10);
     }
 
     private void dibujarGradas(Graphics2D g) {
@@ -179,10 +183,11 @@ public class RenderJuego {
     }
 
     private void dibujarBanca(Graphics2D g) {
+        GeometriaCancha cancha = ConfiguracionJuego.MAPA_CANCHA;
         int bancaW = 214;
         int bancaH = 24;
         int bancaX = ConfiguracionJuego.ANCHO_PANEL / 2 - bancaW / 2;
-        int bancaY = ConfiguracionJuego.CAMPO_Y_MIN - bancaH + 4;
+        int bancaY = cancha.getCampoYMin() - bancaH + 4;
 
         g.setColor(new Color(0, 0, 0, 76));
         g.fillRoundRect(bancaX + 3, bancaY + 5, bancaW, bancaH, 12, 12);
@@ -198,11 +203,16 @@ public class RenderJuego {
         g.drawString("HIDRATACION", bancaX + bancaW - 106, bancaY + 16);
     }
 
-    private void dibujarCancha(Graphics2D g, int frameAnimacion) {
-        int x = ConfiguracionJuego.CAMPO_X_MIN;
-        int y = ConfiguracionJuego.CAMPO_Y_MIN;
-        int w = ConfiguracionJuego.CAMPO_X_MAX - ConfiguracionJuego.CAMPO_X_MIN;
-        int h = ConfiguracionJuego.CAMPO_Y_MAX - ConfiguracionJuego.CAMPO_Y_MIN;
+    private void dibujarCancha(Graphics2D g, GeometriaCancha cancha, int frameAnimacion) {
+        Rectangle campo = cancha.getCampo();
+        Rectangle areaGrandeLocal = cancha.getAreaGrande(true);
+        Rectangle areaGrandeRival = cancha.getAreaGrande(false);
+        Rectangle areaChicaLocal = cancha.getAreaChica(true);
+        Rectangle areaChicaRival = cancha.getAreaChica(false);
+        int x = campo.x;
+        int y = campo.y;
+        int w = campo.width;
+        int h = campo.height;
 
         g.setPaint(new GradientPaint(x, y, new Color(98, 102, 108), x, y + h, new Color(78, 82, 90)));
         g.fillRoundRect(x, y, w, h, 22, 22);
@@ -229,17 +239,39 @@ public class RenderJuego {
         g.setStroke(new BasicStroke(3.5f));
         g.setColor(new Color(236, 236, 236, 224));
         g.drawRect(x, y, w, h);
-        g.drawLine(ConfiguracionJuego.ANCHO_PANEL / 2, y, ConfiguracionJuego.ANCHO_PANEL / 2, y + h);
-        g.drawOval(ConfiguracionJuego.ANCHO_PANEL / 2 - 56, ConfiguracionJuego.ALTO_PANEL / 2 - 56, 112, 112);
-        g.drawRect(x, ConfiguracionJuego.Y_PORTERIA + 34, 116, ConfiguracionJuego.ALTO_PORTERIA - 68);
-        g.drawRect(ConfiguracionJuego.CAMPO_X_MAX - 116, ConfiguracionJuego.Y_PORTERIA + 34, 116, ConfiguracionJuego.ALTO_PORTERIA - 68);
-        g.drawRect(x, ConfiguracionJuego.Y_PORTERIA + 14, 46, ConfiguracionJuego.ALTO_PORTERIA - 28);
-        g.drawRect(ConfiguracionJuego.CAMPO_X_MAX - 46, ConfiguracionJuego.Y_PORTERIA + 14, 46, ConfiguracionJuego.ALTO_PORTERIA - 28);
-        g.fillOval(ConfiguracionJuego.ANCHO_PANEL / 2 - 5, ConfiguracionJuego.ALTO_PANEL / 2 - 5, 10, 10);
+        g.drawLine(cancha.getCentroX(), y, cancha.getCentroX(), y + h);
+        g.drawOval(
+            cancha.getCentroX() - cancha.getRadioCirculoCentral(),
+            cancha.getCentroY() - cancha.getRadioCirculoCentral(),
+            cancha.getRadioCirculoCentral() * 2,
+            cancha.getRadioCirculoCentral() * 2
+        );
+        g.drawRect(areaGrandeLocal.x, areaGrandeLocal.y, areaGrandeLocal.width, areaGrandeLocal.height);
+        g.drawRect(areaGrandeRival.x, areaGrandeRival.y, areaGrandeRival.width, areaGrandeRival.height);
+        g.drawRect(areaChicaLocal.x, areaChicaLocal.y, areaChicaLocal.width, areaChicaLocal.height);
+        g.drawRect(areaChicaRival.x, areaChicaRival.y, areaChicaRival.width, areaChicaRival.height);
+        g.fillOval(cancha.getCentroX() - 5, cancha.getCentroY() - 5, 10, 10);
+        g.fillOval(cancha.getPuntoPenalX(true) - 4, cancha.getPuntoPenalY() - 4, 8, 8);
+        g.fillOval(cancha.getPuntoPenalX(false) - 4, cancha.getPuntoPenalY() - 4, 8, 8);
 
         g.setColor(new Color(232, 232, 232, 176));
-        g.drawArc(x + 84, ConfiguracionJuego.ALTO_PANEL / 2 - 76, 72, 152, 300, 120);
-        g.drawArc(ConfiguracionJuego.CAMPO_X_MAX - 156, ConfiguracionJuego.ALTO_PANEL / 2 - 76, 72, 152, 120, 120);
+        int radioArco = cancha.getRadioArcoArea();
+        g.drawArc(
+            cancha.getPuntoPenalX(true) - radioArco,
+            cancha.getPuntoPenalY() - radioArco,
+            radioArco * 2,
+            radioArco * 2,
+            308,
+            104
+        );
+        g.drawArc(
+            cancha.getPuntoPenalX(false) - radioArco,
+            cancha.getPuntoPenalY() - radioArco,
+            radioArco * 2,
+            radioArco * 2,
+            128,
+            104
+        );
 
         g.setColor(new Color(224, 224, 224, 64));
         for (int linea = y + 54; linea < y + h; linea += 78) {
@@ -250,16 +282,17 @@ public class RenderJuego {
         g.setColor(new Color(255, 194, 92, 60 + parpadeo));
         g.drawRoundRect(x + 2, y + 2, w - 4, h - 4, 20, 20);
 
-        dibujarPorteria(g, true);
-        dibujarPorteria(g, false);
+        dibujarPorteria(g, cancha, true);
+        dibujarPorteria(g, cancha, false);
     }
 
-    private void dibujarPorteria(Graphics2D g, boolean local) {
-        int xMarco = local ? ConfiguracionJuego.CAMPO_X_MIN - 16 : ConfiguracionJuego.CAMPO_X_MAX - 2;
-        int yMarco = ConfiguracionJuego.Y_PORTERIA + 10;
-        int fondo = 28;
-        int anchoMarco = 18;
-        int altoMarco = ConfiguracionJuego.ALTO_PORTERIA - 20;
+    private void dibujarPorteria(Graphics2D g, GeometriaCancha cancha, boolean local) {
+        Rectangle porteria = cancha.getPorteria(local);
+        int xMarco = porteria.x;
+        int yMarco = porteria.y;
+        int fondo = porteria.width;
+        int anchoMarco = Math.max(12, porteria.width - 4);
+        int altoMarco = porteria.height;
 
         g.setColor(new Color(232, 232, 232));
         g.fillRect(xMarco, yMarco, anchoMarco, altoMarco);
@@ -277,9 +310,10 @@ public class RenderJuego {
     }
 
     private void dibujarMarcadoresCancha(Graphics2D g, MotorJuego motor) {
-        int xIzq = ConfiguracionJuego.CAMPO_X_MIN + 28;
-        int xDer = ConfiguracionJuego.CAMPO_X_MAX - 212;
-        int y = ConfiguracionJuego.CAMPO_Y_MIN + 18;
+        GeometriaCancha cancha = motor.getCancha();
+        int xIzq = cancha.getCampoXMin() + 28;
+        int xDer = cancha.getCampoXMax() - 212;
+        int y = cancha.getCampoYMin() + 18;
 
         g.setColor(new Color(0, 0, 0, 104));
         g.fillRoundRect(xIzq, y, 184, 34, 14, 14);
@@ -293,7 +327,7 @@ public class RenderJuego {
 
         int pulso = (int) (Math.sin(relojUI * 0.05) * 5.0);
         g.setColor(new Color(255, 230, 120, 55));
-        g.fillOval(ConfiguracionJuego.ANCHO_PANEL / 2 - 132 + pulso, ConfiguracionJuego.CAMPO_Y_MIN + 14, 264, 46);
+        g.fillOval(cancha.getCentroX() - 132 + pulso, cancha.getCampoYMin() + 14, 264, 46);
     }
 
     private void dibujarJugadoresPorProfundidad(Graphics2D g, MotorJuego motor) {
@@ -445,7 +479,7 @@ public class RenderJuego {
         g.setFont(new Font("SansSerif", Font.PLAIN, 13));
         g.setColor(new Color(236, 236, 236));
         g.drawString("Stamina: " + motor.getStaminaPrincipalPorcentaje() + "%", x + 12, y + 30);
-        g.drawString("Bonus: " + motor.getPuntosBonus() + " / " + motor.getPuntosBonusRival(), x + 12, y + 50);
+        g.drawString("Bonus: " + motor.getPuntosBonus() + " / " + motor.getPuntosBonusRival() + "  H2O: " + motor.getUsosHidratacionBancaRestantes(), x + 12, y + 50);
         g.drawString("Balon: " + String.format("%.1f", motor.getBalon().getAltura()) + "m", x + 12, y + 69);
 
         int barraX = x + 142;
@@ -473,6 +507,50 @@ public class RenderJuego {
         }
         g.setColor(new Color(210, 230, 240, 186));
         g.drawString(motor.isModoEspectador() ? "F2 jugador | P pausa" : "SHIFT correr | SPACE pase | X tiro | C barrida", x + 298, y + 50);
+    }
+
+    private void dibujarNarracionEnPantalla(Graphics2D g, MotorJuego motor) {
+        String narracion = motor.getNarracionActual();
+        String textoSaque = motor.getTextoSaque();
+        boolean tieneNarracion = narracion != null && !narracion.isEmpty() && motor.getFramesNarracion() > 0;
+        boolean tieneEvento = textoSaque != null && !textoSaque.isEmpty() && motor.getFramesTextoSaque() > 0;
+        if (!tieneNarracion && !tieneEvento) {
+            return;
+        }
+
+        int x = ConfiguracionJuego.ANCHO_PANEL / 2 - 260;
+        int y = ConfiguracionJuego.ALTO_PANEL - 116;
+        int ancho = 520;
+        int alto = tieneNarracion && tieneEvento ? 68 : 46;
+        int alphaPanel = tieneNarracion ? 216 : 190;
+
+        g.setColor(new Color(8, 12, 18, alphaPanel));
+        g.fillRoundRect(x, y, ancho, alto, 18, 18);
+        g.setColor(new Color(255, 255, 255, 72));
+        g.drawRoundRect(x, y, ancho, alto, 18, 18);
+
+        int brilloX = x + (int) ((relojUI * 5L) % Math.max(1, ancho + 140)) - 120;
+        g.setColor(new Color(255, 255, 255, 26));
+        g.fillRoundRect(brilloX, y + 6, 112, alto - 12, 14, 14);
+
+        int cursorY = y + 20;
+        if (tieneEvento) {
+            g.setFont(new Font("SansSerif", Font.BOLD, 12));
+            g.setColor(new Color(255, 208, 112));
+            g.drawString("EVENTO", x + 16, cursorY);
+            g.setFont(new Font("SansSerif", Font.BOLD, 18));
+            g.setColor(new Color(255, 244, 214));
+            g.drawString(recortarTexto(textoSaque, 48), x + 84, cursorY + 1);
+            cursorY += 28;
+        }
+        if (tieneNarracion) {
+            g.setFont(new Font("SansSerif", Font.BOLD, 12));
+            g.setColor(new Color(118, 214, 255));
+            g.drawString("NARRADOR", x + 16, cursorY);
+            g.setFont(new Font("SansSerif", Font.BOLD, 17));
+            g.setColor(new Color(234, 246, 255));
+            g.drawString(recortarTexto(narracion, 52), x + 98, cursorY + 1);
+        }
     }
 
     private void dibujarBarraCargaAccion(Graphics2D g, EntradaJuego entrada, boolean modoEspectador) {
