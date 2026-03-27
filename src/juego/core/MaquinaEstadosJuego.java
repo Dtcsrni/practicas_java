@@ -22,8 +22,12 @@ public class MaquinaEstadosJuego {
     }
 
     public boolean permiteActualizarMundo() {
-        // La simulacion solo corre durante el partido activo.
-        return estadoActual == EstadoJuego.JUGANDO;
+        // La simulacion corre durante el partido y tambien en el cierre final
+        // para sostener animaciones de victoria/derrota en cancha.
+        return estadoActual == EstadoJuego.JUGANDO
+            || estadoActual == EstadoJuego.VICTORIA
+            || estadoActual == EstadoJuego.DERROTA
+            || estadoActual == EstadoJuego.EMPATE;
     }
 
     public void iniciarDesdeInicio() {

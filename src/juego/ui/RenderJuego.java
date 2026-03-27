@@ -366,9 +366,11 @@ public class RenderJuego {
         Jugador arbitro = motor.getArbitro();
         int frames = Math.max(1, motor.getFramesAccionArbitro());
         int pulso = (int) Math.round(Math.sin(relojUI * 0.20) * 6.0);
-        int x = arbitro.getX() + arbitro.getAncho() / 2 - 26;
+        g.setFont(new Font("SansSerif", Font.BOLD, 11));
+        FontMetrics fm = g.getFontMetrics();
+        int w = Math.max(52, fm.stringWidth(accion) + 14);
+        int x = arbitro.getX() + arbitro.getAncho() / 2 - w / 2;
         int y = arbitro.getY() - 28 - pulso / 2;
-        int w = 52;
         int h = 18;
         int alphaBase = Math.max(72, Math.min(210, 120 + frames * 3));
 
@@ -379,6 +381,14 @@ public class RenderJuego {
             fondo = new Color(72, 22, 20, alphaBase);
             borde = new Color(255, 132, 112, Math.min(255, alphaBase + 32));
             texto = new Color(255, 220, 214, Math.min(255, alphaBase + 28));
+        } else if ("AMARILLA".equals(accion)) {
+            fondo = new Color(102, 82, 12, alphaBase);
+            borde = new Color(255, 220, 90, Math.min(255, alphaBase + 32));
+            texto = new Color(255, 246, 190, Math.min(255, alphaBase + 28));
+        } else if ("ROJA".equals(accion)) {
+            fondo = new Color(108, 16, 16, alphaBase);
+            borde = new Color(255, 94, 94, Math.min(255, alphaBase + 32));
+            texto = new Color(255, 230, 230, Math.min(255, alphaBase + 28));
         } else if ("GOL".equals(accion)) {
             fondo = new Color(22, 64, 36, alphaBase);
             borde = new Color(118, 246, 172, Math.min(255, alphaBase + 32));
@@ -390,8 +400,7 @@ public class RenderJuego {
         g.setColor(borde);
         g.drawRoundRect(x, y, w, h, 10, 10);
         g.setColor(texto);
-        g.setFont(new Font("SansSerif", Font.BOLD, 11));
-        g.drawString(accion, x + 7, y + 13);
+        g.drawString(accion, x + (w - fm.stringWidth(accion)) / 2, y + 13);
     }
 
     private void dibujarParticulasJuego(Graphics2D g, MotorJuego motor) {
@@ -481,6 +490,7 @@ public class RenderJuego {
         g.drawString("Stamina: " + motor.getStaminaPrincipalPorcentaje() + "%", x + 12, y + 30);
         g.drawString("Bonus: " + motor.getPuntosBonus() + " / " + motor.getPuntosBonusRival() + "  H2O: " + motor.getUsosHidratacionBancaRestantes(), x + 12, y + 50);
         g.drawString("Balon: " + String.format("%.1f", motor.getBalon().getAltura()) + "m", x + 12, y + 69);
+        g.drawString(motor.getResumenTarjetas(), x + 238, y + 69);
 
         int barraX = x + 142;
         int barraY = y + 16;
@@ -506,7 +516,9 @@ public class RenderJuego {
             g.drawString(recortarTexto(aviso, 45), x + 298, y + 30);
         }
         g.setColor(new Color(210, 230, 240, 186));
-        g.drawString(motor.isModoEspectador() ? "F2 jugador | P pausa" : "SHIFT correr | SPACE pase | X tiro | C barrida", x + 298, y + 50);
+        g.drawString(motor.getDisciplinaPrincipalTexto(), x + 298, y + 50);
+        g.setColor(new Color(210, 230, 240, 150));
+        g.drawString(motor.isModoEspectador() ? "F2 jugador | P pausa" : "SHIFT correr | SPACE pase | X tiro | C barrida", x + 298, y + 66);
     }
 
     private void dibujarNarracionEnPantalla(Graphics2D g, MotorJuego motor) {

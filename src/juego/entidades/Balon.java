@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GradientPaint;
+import java.awt.RadialGradientPaint;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 
@@ -256,61 +257,86 @@ public class Balon extends EntidadJuego {
 
     @Override
     public void dibujar(Graphics g) {
-        // Sombra en piso + balon con volumen y costuras animadas.
+        // Sombra en piso + balon con volumen, brillo y paneles mas legibles.
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
         int yRender = getYRender();
         double rapidez = Math.hypot(velocidadX, velocidadY);
-        int sombraAncho = Math.max(6, ancho - (int) Math.round(altura * 0.10));
+        int sombraAncho = Math.max(6, ancho + 2 - (int) Math.round(altura * 0.10));
         int sombraAlto = Math.max(4, alto / 3 - (int) Math.round(altura * 0.03));
         int sombraX = x + (ancho - sombraAncho) / 2;
         int sombraY = y + alto - sombraAlto / 2;
-        g2.setColor(new Color(0, 0, 0, 60));
+        g2.setColor(new Color(0, 0, 0, 70));
         g2.fillOval(sombraX, sombraY, sombraAncho, sombraAlto);
+        if (altura > 3.0) {
+            g2.setColor(new Color(0, 0, 0, 28));
+            g2.fillOval(sombraX + 2, sombraY + 1, Math.max(4, sombraAncho - 4), Math.max(3, sombraAlto - 1));
+        }
         if (rapidez > 2.4) {
             int trail = Math.min(18, (int) Math.round(rapidez * 2.2));
             int trailX = (int) Math.round(x - velocidadX * 2.4);
             int trailY = (int) Math.round(yRender - velocidadY * 2.4);
-            g2.setColor(new Color(255, 255, 255, 65));
+            g2.setColor(new Color(255, 248, 226, 72));
             g2.fillOval(trailX, trailY, Math.max(8, ancho - trail), Math.max(8, alto - trail));
         }
 
-        g2.setPaint(new GradientPaint(x, yRender, new Color(252, 252, 252), x, yRender + alto, new Color(210, 210, 210)));
+        float[] dist = { 0.0f, 0.58f, 1.0f };
+        Color[] colores = {
+            new Color(255, 255, 255),
+            new Color(240, 240, 236),
+            new Color(190, 194, 198)
+        };
+        g2.setPaint(new RadialGradientPaint(
+            (float) (x + ancho * 0.34),
+            (float) (yRender + alto * 0.28),
+            Math.max(6.0f, ancho * 0.78f),
+            dist,
+            colores
+        ));
         g2.fillOval(x, yRender, ancho, alto);
-        g2.setColor(new Color(24, 24, 24));
+        g2.setPaint(new GradientPaint(x, yRender, new Color(255, 255, 255, 160), x + ancho, yRender + alto, new Color(120, 126, 136, 90)));
+        g2.drawOval(x, yRender, ancho, alto);
+        g2.setColor(new Color(26, 28, 34, 210));
         g2.drawOval(x, yRender, ancho, alto);
 
         int centroX = x + ancho / 2;
         int centroY = yRender + alto / 2;
-        int panel = Math.max(3, ancho / 5);
-        int oscilacionX = (int) Math.round(Math.cos(anguloAnimacion) * 2.0);
-        int oscilacionY = (int) Math.round(Math.sin(anguloAnimacion) * 2.0);
+        int panel = Math.max(4, ancho / 4);
+        int oscilacionX = (int) Math.round(Math.cos(anguloAnimacion) * 2.2);
+        int oscilacionY = (int) Math.round(Math.sin(anguloAnimacion) * 2.2);
 
+        g2.setColor(new Color(30, 32, 38, 230));
         g2.fillOval(centroX - panel / 2 + oscilacionX, centroY - panel / 2 + oscilacionY, panel, panel);
-        g2.drawLine(centroX, yRender + 2, centroX + oscilacionX, centroY - panel / 2);
-        g2.drawLine(centroX, centroY + panel / 2, centroX - oscilacionX, yRender + alto - 2);
-        g2.drawLine(x + 2, centroY, centroX - panel / 2 + oscilacionX, centroY + oscilacionY);
-        g2.drawLine(centroX + panel / 2, centroY, x + ancho - 2, centroY - oscilacionY);
-        int panelExtra = Math.max(2, panel - 1);
-        g2.fillOval(x + 3 + (faseSigno(anguloAnimacion) * 1), yRender + alto / 2 - panelExtra / 2, panelExtra, panelExtra);
-        g2.fillOval(x + ancho - panelExtra - 3 - (faseSigno(anguloAnimacion) * 1), yRender + alto / 2 - panelExtra / 2, panelExtra, panelExtra);
-        g2.fillOval(centroX - panelExtra / 2, yRender + 2 + (faseSigno(anguloAnimacion + Math.PI / 2.0) * 1), panelExtra, panelExtra);
-        g2.fillOval(centroX - panelExtra / 2, yRender + alto - panelExtra - 2 - (faseSigno(anguloAnimacion + Math.PI / 2.0) * 1), panelExtra, panelExtra);
-        g2.setColor(new Color(26, 26, 26, 170));
+        g2.setColor(new Color(16, 18, 22, 170));
+        g2.drawLine(centroX, yRender + 3, centroX + oscilacionX, centroY - panel / 2);
+        g2.drawLine(centroX, centroY + panel / 2, centroX - oscilacionX, yRender + alto - 3);
+        g2.drawLine(x + 3, centroY, centroX - panel / 2 + oscilacionX, centroY + oscilacionY);
+        g2.drawLine(centroX + panel / 2, centroY, x + ancho - 3, centroY - oscilacionY);
+        int panelExtra = Math.max(3, panel - 1);
+        g2.fillOval(x + 3 + faseSigno(anguloAnimacion), yRender + alto / 2 - panelExtra / 2, panelExtra, panelExtra);
+        g2.fillOval(x + ancho - panelExtra - 3 - faseSigno(anguloAnimacion), yRender + alto / 2 - panelExtra / 2, panelExtra, panelExtra);
+        g2.fillOval(centroX - panelExtra / 2, yRender + 2 + faseSigno(anguloAnimacion + Math.PI / 2.0), panelExtra, panelExtra);
+        g2.fillOval(centroX - panelExtra / 2, yRender + alto - panelExtra - 2 - faseSigno(anguloAnimacion + Math.PI / 2.0), panelExtra, panelExtra);
+        g2.setColor(new Color(24, 24, 28, 150));
         int fase = (int) Math.round((anguloAnimacion * 10.0) % 360.0);
         g2.drawArc(x + 3, yRender + 4, ancho - 6, alto - 8, fase, 160);
         g2.drawArc(x + 4, yRender + 5, ancho - 8, alto - 10, fase + 180, 140);
+
+        g2.setColor(new Color(255, 255, 255, 52));
+        g2.fillOval(x + 2, yRender + 2, Math.max(4, ancho - 6), Math.max(3, alto / 2));
         if (altura > 1.5) {
-            g2.setColor(new Color(220, 235, 255, 54));
+            g2.setColor(new Color(220, 235, 255, 58));
             g2.fillOval(x - 1, yRender - 1, ancho + 2, alto + 2);
         }
         if (rapidez > 3.2) {
-            g2.setColor(new Color(255, 245, 200, 80));
+            g2.setColor(new Color(255, 244, 190, 96));
             g2.drawOval(x - 1, yRender - 1, ancho + 2, alto + 2);
         }
-        g2.setColor(new Color(255, 255, 255, 120));
-        g2.fillOval(x + 3, yRender + 3, Math.max(3, ancho / 3), Math.max(3, alto / 4));
+        g2.setColor(new Color(255, 255, 255, 168));
+        g2.fillOval(x + 3, yRender + 3, Math.max(4, ancho / 3), Math.max(3, alto / 4));
+        g2.setColor(new Color(255, 248, 220, 82));
+        g2.fillOval(x + ancho / 2 - 2, yRender + 4, Math.max(3, ancho / 6), Math.max(2, alto / 6));
         g2.dispose();
     }
 
