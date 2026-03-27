@@ -3610,6 +3610,9 @@ public class MotorJuego {
     }
 
     private EventoJuego verificarGol() {
+        if (saqueDeMetaEnPreparacion()) {
+            return EventoJuego.NINGUNO;
+        }
         double centroX = balon.getCentroX();
         double centroY = balon.getCentroY();
         boolean balonCruzoLineaDerecha = balonEntroEnArco(false);
@@ -3652,6 +3655,16 @@ public class MotorJuego {
         }
 
         return EventoJuego.NINGUNO;
+    }
+
+    private boolean saqueDeMetaEnPreparacion() {
+        if (tipoReanudacionPendiente == TipoReanudacion.META) {
+            return true;
+        }
+        return poseedorBalon != null
+            && esPortero(poseedorBalon)
+            && !balonLibre
+            && framesPrioridadSaquePortero > 0;
     }
 
     private boolean balonEntroEnArco(boolean arcoIzquierdo) {
