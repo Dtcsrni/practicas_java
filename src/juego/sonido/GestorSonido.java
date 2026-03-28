@@ -12,7 +12,7 @@ import javax.sound.sampled.SourceDataLine;
 // Sintesis PCM ligera para evitar depender del beep del sistema operativo.
 public class GestorSonido {
     private static final float SAMPLE_RATE = 22050.0f;
-    private static final double NIVEL_SALIDA = 0.72;
+    private static final double NIVEL_SALIDA = 0.92;
 
     private final ExecutorService executor;
 
@@ -25,15 +25,19 @@ public class GestorSonido {
     }
 
     public void reproducir(TipoSonido sonido) {
-        if (sonido == null) {
-            return;
-        }
-        executor.submit(() -> reproducirInterno(sonido));
+        reproducir(SonidoEvento.normal(sonido));
     }
 
-    private void reproducirInterno(TipoSonido sonido) {
+    public void reproducir(SonidoEvento evento) {
+        if (evento == null) {
+            return;
+        }
+        executor.submit(() -> reproducirInterno(evento));
+    }
+
+    private void reproducirInterno(SonidoEvento evento) {
         try {
-            byte[] audio = sintetizar(sonido);
+            byte[] audio = sintetizar(evento);
             if (audio.length == 0) {
                 return;
             }
@@ -49,28 +53,19 @@ public class GestorSonido {
         }
     }
 
-    private byte[] sintetizar(TipoSonido sonido) {
-        Capa[] capas = switch (sonido) {
+    private byte[] sintetizar(SonidoEvento evento) {
+        double intensidad = evento.intensidad();
+        Capa[] capas = switch (evento.tipo()) {
             case INICIO -> new Capa[] {
                 silbato(980.0, 1220.0, 180, 0.20, 0.0),
                 tono(392.0, 70, 0.10, 165.0, Forma.TRIANGULAR),
                 tono(523.25, 80, 0.11, 245.0, Forma.TRIANGULAR),
                 tono(659.25, 130, 0.12, 335.0, Forma.TRIANGULAR)
             };
-            case PASE -> new Capa[] {
-                golpeBalon(150.0 + variar(-10.0, 10.0), 82, 0.22, 0.0),
-                aire(760.0, 420.0, 70, 0.05, 8.0)
-            };
-            case TIRO -> new Capa[] {
-                golpeBalon(122.0 + variar(-8.0, 8.0), 120, 0.28, 0.0),
-                tonoDeslizante(210.0, 92.0, 130, 0.08, 0.0, Forma.SENO),
-                aire(900.0, 180.0, 150, 0.07, 14.0)
-            };
-            case ROBO -> new Capa[] {
-                ruido(105, 0.10, 0.0, 0.22),
-                tonoDeslizante(330.0, 180.0, 95, 0.08, 0.0, Forma.SIERRA_SUAVE),
-                golpeBalon(132.0, 70, 0.14, 18.0)
-            };
+            case PASE -> crearCapasPase(intensidad);
+            case TIRO -> crearCapasTiro(intensidad);
+            case BARRIDA -> crearCapasBarrida(intensidad);
+            case ROBO -> crearCapasRobo(intensidad);
             case SAQUE -> new Capa[] {
                 silbato(1120.0, 1320.0, 125, 0.19, 0.0)
             };
@@ -93,6 +88,57 @@ public class GestorSonido {
             };
         };
         return renderizar(capas);
+    }
+
+    private Capa[] crearCapasPase(double intensidad) {
+        double cuerpo = 0.15 + intensidad * 0.07;
+        if (intensidad < 0.34) {
+            return new Capa[] {
+                golpeBalon(172.0 + variar(-10.0, 8.0), 70, cuerpo, 0.0),
+                aire(620.0, 420.0, 52, 0.03, 6.0)
+            };
+        }
+        if (intensidad < 0.70) {
+            return new Capa[] {
+                golpeBalon(154.0 + variar(-10.0, 10.0), 90, cuerpo + 0.03, 0.0),
+                tonoDeslizante(230.0, 180.0, 70, 0.05, 8.0, Forma.SENO),
+                aire(720.0, 360.0, 82, 0.05, 10.0)
+            };
+        }
+        return new Capa[] {
+            golpeBalon(132.0 + variar(-8.0, 8.0), 108, cuerpo + 0.05, 0.0),
+            tonoDeslizante(215.0, 126.0, 95, 0.06, 10.0, Forma.SENO),
+            aire(940.0, 240.0, 128, 0.08, 14.0)
+        };
+    }
+
+    private Capa[] crearCapasTiro(double intensidad) {
+        double golpe = 0.20 + intensidad * 0.12;
+        double arrastre = 0.06 + intensidad * 0.05;
+        return new Capa[] {
+            golpeBalon(132.0 - intensidad * 18.0 + variar(-6.0, 6.0), 108 + (int) Math.round(intensidad * 30.0), golpe, 0.0),
+            tonoDeslizante(240.0 - intensidad * 24.0, 96.0 - intensidad * 18.0, 120 + (int) Math.round(intensidad * 35.0),
+                0.06 + intensidad * 0.04, 0.0, Forma.SENO),
+            aire(860.0 + intensidad * 220.0, 180.0, 120 + (int) Math.round(intensidad * 65.0), arrastre, 14.0)
+        };
+    }
+
+    private Capa[] crearCapasBarrida(double intensidad) {
+        return new Capa[] {
+            ruido(80 + (int) Math.round(intensidad * 80.0), 0.06 + intensidad * 0.10, 0.0, 0.34 + intensidad * 0.18),
+            tonoDeslizante(300.0 + intensidad * 40.0, 118.0, 90 + (int) Math.round(intensidad * 55.0),
+                0.05 + intensidad * 0.05, 4.0, Forma.SIERRA_SUAVE),
+            golpeBalon(150.0 - intensidad * 26.0, 58 + (int) Math.round(intensidad * 24.0), 0.08 + intensidad * 0.07, 24.0)
+        };
+    }
+
+    private Capa[] crearCapasRobo(double intensidad) {
+        return new Capa[] {
+            ruido(70 + (int) Math.round(intensidad * 40.0), 0.05 + intensidad * 0.04, 0.0, 0.18 + intensidad * 0.14),
+            tonoDeslizante(260.0 + intensidad * 40.0, 170.0, 68 + (int) Math.round(intensidad * 28.0),
+                0.04 + intensidad * 0.04, 4.0, Forma.SIERRA_SUAVE),
+            golpeBalon(138.0 - intensidad * 12.0, 60 + (int) Math.round(intensidad * 18.0), 0.09 + intensidad * 0.05, 16.0)
+        };
     }
 
     private byte[] renderizar(Capa[] capas) {

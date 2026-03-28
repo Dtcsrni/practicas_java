@@ -41,9 +41,33 @@ public final class ConfiguracionJuego {
     public static final int DURACION_TURBO_EN_ESCENARIO = FPS * 6;
 
     // Posiciones iniciales de la formacion 3 vs 3.
-    public static final int POS_X_BASE_LOCAL = CAMPO_X_MIN + Math.max(92, (int) Math.round((CAMPO_X_MAX - CAMPO_X_MIN) * 0.16));
-    public static final int POS_X_BASE_RIVAL = CAMPO_X_MAX - Math.max(126, (int) Math.round((CAMPO_X_MAX - CAMPO_X_MIN) * 0.18));
+    public static final int ANCHO_CAMPO = CAMPO_X_MAX - CAMPO_X_MIN;
+    public static final int ALTO_CAMPO = CAMPO_Y_MAX - CAMPO_Y_MIN;
+    public static final int POS_X_BASE_LOCAL = CAMPO_X_MIN + Math.max(92, (int) Math.round(ANCHO_CAMPO * 0.15));
+    public static final int POS_X_BASE_RIVAL = CAMPO_X_MAX - Math.max(118, (int) Math.round(ANCHO_CAMPO * 0.15));
     public static final int POS_Y_PORTERO = MAPA_CANCHA.getCentroY() - 21;
-    public static final int POS_Y_CAMPO_ARRIBA = CAMPO_Y_MIN + Math.max(118, (int) Math.round((CAMPO_Y_MAX - CAMPO_Y_MIN) * 0.34));
-    public static final int POS_Y_CAMPO_ABAJO = CAMPO_Y_MIN + Math.max(320, (int) Math.round((CAMPO_Y_MAX - CAMPO_Y_MIN) * 0.76));
+    public static final int POS_Y_CAMPO_ARRIBA = CAMPO_Y_MIN + Math.max(72, (int) Math.round(ALTO_CAMPO * 0.28));
+    public static final int POS_Y_CAMPO_ABAJO = CAMPO_Y_MIN + Math.max(214, (int) Math.round(ALTO_CAMPO * 0.60));
+    public static final int OFFSET_X_APOYO_LOCAL = Math.max(38, (int) Math.round(ANCHO_CAMPO * 0.05));
+    public static final int OFFSET_X_EXTREMO_LOCAL = Math.max(70, (int) Math.round(ANCHO_CAMPO * 0.085));
+    public static final int OFFSET_X_MEDIA_LOCAL = Math.max(18, (int) Math.round(ANCHO_CAMPO * 0.03));
+    public static final int OFFSET_X_RIVAL_UNO = Math.max(24, (int) Math.round(ANCHO_CAMPO * 0.04));
+    public static final int OFFSET_X_EXTREMO_RIVAL = Math.max(40, (int) Math.round(ANCHO_CAMPO * 0.055));
+    public static final int OFFSET_X_MEDIA_RIVAL = Math.max(8, (int) Math.round(ANCHO_CAMPO * 0.016));
+    public static final int OFFSET_Y_EXTREMO = Math.max(50, (int) Math.round(ALTO_CAMPO * 0.17));
+    public static final int OFFSET_Y_MEDIA = Math.max(42, (int) Math.round(ALTO_CAMPO * 0.14));
+    public static final int[] Y_ENTRADA_LOCALES = {
+        POS_Y_PORTERO,
+        CAMPO_Y_MIN + Math.max(52, (int) Math.round(ALTO_CAMPO * 0.18)),
+        CAMPO_Y_MIN + Math.max(132, (int) Math.round(ALTO_CAMPO * 0.36)),
+        CAMPO_Y_MIN + Math.max(212, (int) Math.round(ALTO_CAMPO * 0.56)),
+        CAMPO_Y_MIN + Math.max(292, (int) Math.round(ALTO_CAMPO * 0.78))
+    };
+    public static final int[] Y_ENTRADA_RIVALES = {
+        POS_Y_PORTERO,
+        CAMPO_Y_MIN + Math.max(292, (int) Math.round(ALTO_CAMPO * 0.78)),
+        CAMPO_Y_MIN + Math.max(212, (int) Math.round(ALTO_CAMPO * 0.56)),
+        CAMPO_Y_MIN + Math.max(132, (int) Math.round(ALTO_CAMPO * 0.36)),
+        CAMPO_Y_MIN + Math.max(52, (int) Math.round(ALTO_CAMPO * 0.18))
+    };
 }

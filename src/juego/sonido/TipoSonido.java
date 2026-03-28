@@ -5,6 +5,7 @@ public enum TipoSonido {
     INICIO,
     PASE,
     TIRO,
+    BARRIDA,
     ROBO,
     SAQUE,
     GOL,

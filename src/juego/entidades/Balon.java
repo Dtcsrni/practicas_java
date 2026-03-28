@@ -193,6 +193,20 @@ public class Balon extends EntidadJuego {
         return altura;
     }
 
+    public int getIndiceSpriteFrame() {
+        if (altura > 10.0) {
+            return 7;
+        }
+        if (altura > 3.0) {
+            return 6;
+        }
+        return Math.floorMod((int) Math.round(anguloAnimacion * 2.6), 6);
+    }
+
+    public boolean isSpriteEnAire() {
+        return altura > 2.0 || Math.abs(velocidadZ) > VELOCIDAD_VERTICAL_MINIMA;
+    }
+
     public boolean estaEnAire() {
         return altura > 0.1 || Math.abs(velocidadZ) > VELOCIDAD_VERTICAL_MINIMA;
     }
@@ -215,6 +229,28 @@ public class Balon extends EntidadJuego {
         velocidadY = nuevaVelocidadY;
         velocidadZ = nuevaVelocidadZ;
         limitarVelocidad();
+    }
+
+    public void animarConduccion(double deltaX, double deltaY, boolean enManos) {
+        double rapidezVisual = Math.hypot(deltaX, deltaY);
+        if (enManos) {
+            altura = 0.0;
+            velocidadX = 0.0;
+            velocidadY = 0.0;
+            velocidadZ = 0.0;
+            anguloAnimacion += 0.08;
+            return;
+        }
+
+        velocidadX = deltaX * 0.22;
+        velocidadY = deltaY * 0.22;
+        velocidadZ = 0.0;
+        anguloAnimacion += Math.max(0.14, rapidezVisual * 0.24);
+        if (rapidezVisual > 0.30) {
+            altura = Math.max(0.0, 0.35 + Math.abs(Math.sin(anguloAnimacion * 0.85)) * Math.min(1.4, rapidezVisual * 0.22));
+        } else {
+            altura = 0.0;
+        }
     }
 
     public int getRadio() {

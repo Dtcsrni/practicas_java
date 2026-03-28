@@ -70,10 +70,10 @@ public final class GeometriaCancha {
     public static GeometriaCancha crearReglamentariaEscalada(int anchoPanel, int altoPanel) {
         // Conserva el mapa unificado, pero con una interpretacion mas arcade:
         // cancha algo mas ancha visualmente y porterias/areas adaptadas a ritmo alto.
-        int margenVertical = 42;
+        int margenVertical = Math.max(70, (int) Math.round(altoPanel * 0.11));
         int altoCampo = altoPanel - margenVertical * 2;
         int anchoCampo = (int) Math.round(altoCampo * 112.0 / 68.0);
-        anchoCampo = Math.min(anchoPanel - 72, anchoCampo);
+        anchoCampo = Math.min(anchoPanel - Math.max(232, (int) Math.round(anchoPanel * 0.18)), anchoCampo);
         int margenHorizontal = (anchoPanel - anchoCampo) / 2;
 
         Rectangle campo = new Rectangle(margenHorizontal, margenVertical, anchoCampo, altoCampo);

@@ -8,8 +8,8 @@ public class VentanaJuego extends JFrame {
         // Configuracion base de la ventana.
         setTitle("La Canchita - Futbol Callejero (Java)");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        // Mantiene una resolucion fija para preservar el layout.
-        setResizable(false);
+        // Permitir redimensionar; el `PanelJuego` escala la escena automáticamente.
+        setResizable(true);
         // Construye el panel principal.
         PanelJuego panel = new PanelJuego();
         add(panel);

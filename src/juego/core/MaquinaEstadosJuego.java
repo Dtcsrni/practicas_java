@@ -5,12 +5,14 @@ public class MaquinaEstadosJuego {
     private EstadoJuego estadoActual;
     private int framesEstado;
     private String mensajeTemporal;
+    private boolean inicioModoEspectador;
 
     public MaquinaEstadosJuego() {
         // El juego siempre arranca en el menu inicial.
         estadoActual = EstadoJuego.INICIO;
         framesEstado = 0;
         mensajeTemporal = "";
+        inicioModoEspectador = true;
     }
 
     public EstadoJuego getEstadoActual() {
@@ -19,6 +21,10 @@ public class MaquinaEstadosJuego {
 
     public String getMensajeTemporal() {
         return mensajeTemporal;
+    }
+
+    public boolean isInicioModoEspectador() {
+        return inicioModoEspectador;
     }
 
     public boolean permiteActualizarMundo() {
@@ -52,6 +58,13 @@ public class MaquinaEstadosJuego {
         cambiarEstado(EstadoJuego.INICIO);
         framesEstado = 0;
         mensajeTemporal = "";
+        inicioModoEspectador = true;
+    }
+
+    public void alternarModoInicio() {
+        if (estadoActual == EstadoJuego.INICIO) {
+            inicioModoEspectador = !inicioModoEspectador;
+        }
     }
 
     public void procesarEventoJuego(EventoJuego evento) {
