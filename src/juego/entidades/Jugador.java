@@ -149,6 +149,8 @@ public class Jugador extends EntidadJuego {
         // Silueta organica: cabeza, torso curvo y extremidades con articulacion.
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
         if (framesLanzadaVisual > 0) {
             dibujarLanzada(g2);
             g2.dispose();
@@ -303,6 +305,8 @@ public class Jugador extends EntidadJuego {
     public void dibujarFiguraEvento(Graphics2D g2, int x, int y, int w, int h, boolean celebrar) {
         Graphics2D g = (Graphics2D) g2.create();
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
         int cabezaTam = Math.max(12, calcCabeza(w));
         int torsoW = Math.max(16, calcTorsoW(w));
         int torsoH = Math.max(14, calcTorsoH(h));
@@ -815,15 +819,24 @@ public class Jugador extends EntidadJuego {
         }
 
         boolean moviendose = intensidadMovimiento > 0;
+        // Ajustar consumo/recuperacion según staminaMax (varia por jugador/equipo)
+        double baseConsumoSprint = 0.24; // por frame
+        double baseRecuperacionMov = 0.48;
+        double baseRecuperacionReposo = 1.20;
+        double consumo = baseConsumoSprint;
+        double recuperacion = moviendose ? baseRecuperacionMov : baseRecuperacionReposo;
+        if (staminaMax > 0.0001) {
+            // Jugadores con mayor staminaMax se fatigan más despacio y se recuperan más rapido.
+            consumo = baseConsumoSprint * (100.0 / staminaMax);
+            recuperacion = recuperacion * (staminaMax / 100.0);
+        }
+
         if (sprintando && moviendose && !agotado) {
-            // Menor consumo por sprint — jugadores se cansan más despacio
-            stamina = Math.max(0.0, stamina - 0.24);
+            stamina = Math.max(0.0, stamina - consumo);
             if (stamina <= 0.0) {
                 agotado = true;
             }
         } else {
-            // Recuperacion aumentada cuando no sprintan o en reposo
-            double recuperacion = moviendose ? 0.48 : 1.20;
             stamina = Math.min(staminaMax, stamina + recuperacion);
             if (agotado && stamina >= 34.0) {
                 agotado = false;

@@ -66,25 +66,42 @@ public class RenderJuego {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-        sprites.configurarPixelArt(g2);
+        // Mantener render vectorial de alta calidad por defecto.
+        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+        // Mejorar renderizado de texto y precisión de trazos para figuras vectoriales
+        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
 
         relojUI++;
         actualizarEstadoVisual(maquinaEstados.getEstadoActual());
 
         dibujarCielo(g2);
-        sprites.dibujarBackdrop(g2);
+        // Dibujar backdrop (sprite) con configuración pixel-art en un contexto separado.
+        Graphics2D gSprite = (Graphics2D) g2.create();
+        sprites.configurarPixelArt(gSprite);
+        sprites.dibujarBackdrop(gSprite);
+        gSprite.dispose();
         dibujarEntornoUrbano(g2, motor);
         dibujarCancha(g2, motor.getCancha(), frameAnimacion);
         if (motor.isMedioTiempoActivo()) {
             dibujarShowMedioTiempo(g2, motor);
         }
         dibujarBanca(g2);
+        // Hidratacion y turbo son sprites: dibujarlos con pixel-art en copia gráfica.
+        Graphics2D gSprite2 = (Graphics2D) g2.create();
+        sprites.configurarPixelArt(gSprite2);
+        sprites.dibujarHidratacion(gSprite2, motor.getHidratacionBanca(), relojUI);
+        sprites.dibujarTurbo(gSprite2, motor.getTurbo(), relojUI);
+        gSprite2.dispose();
 
-        sprites.dibujarHidratacion(g2, motor.getHidratacionBanca(), relojUI);
-        sprites.dibujarTurbo(g2, motor.getTurbo(), relojUI);
-
+        // Jugadores dibujados como vectoriales (alta calidad)
         dibujarJugadoresPorProfundidad(g2, motor);
-        sprites.dibujarBalon(g2, motor.getBalon());
+        // Balon es un sprite, usar pixel-art temporalmente
+        Graphics2D gSprite3 = (Graphics2D) g2.create();
+        sprites.configurarPixelArt(gSprite3);
+        sprites.dibujarBalon(gSprite3, motor.getBalon());
+        gSprite3.dispose();
         dibujarParticulasJuego(g2, motor);
         dibujarEtiquetasJugadores(g2, motor);
         dibujarIndicadorArbitral(g2, motor);
