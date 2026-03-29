@@ -317,7 +317,7 @@ public class MotorJuego {
     private static final double DISTANCIA_BARRIDA_MAX = 78.0;
     private static final double DISTANCIA_IMPACTO_BARRIDA = 44.0;
     private static final double IMPULSO_BARRIDA_BASE = 4.3;
-    private static final double COSTO_STAMINA_BARRIDA = 7.5;
+    private static final double COSTO_STAMINA_BARRIDA = 5.0;
     private static final double DISTANCIA_PRESION_ALTA = 86.0;
     private static final double DISTANCIA_PASE_SEGURA = 250.0;
     private static final double DISTANCIA_PASE_NPC = 170.0;
@@ -2366,18 +2366,43 @@ public class MotorJuego {
         }
 
         boolean saqueLocal = esJugadorLocal(victima);
-        int x = (int) Math.round(victima.getX() + victima.getAncho() / 2.0);
-        int y = (int) Math.round(victima.getY() + victima.getAlto() / 2.0);
-        java.awt.Point punto = cancha.normalizarPuntoLibreIndirecto(x, y);
-        Jugador ejecutor = seleccionarCobradorCampo(saqueLocal, punto.x, punto.y);
-        programarReanudacion(
-            TipoReanudacion.LIBRE_INDIRECTO,
-            ejecutor,
-            saqueLocal,
-            punto.x,
-            punto.y,
-            "🛑 Falta de " + infractor.getNombre()
-        );
+        int centroX = (int) Math.round(victima.getX() + victima.getAncho() / 2.0);
+        int centroY = (int) Math.round(victima.getY() + victima.getAlto() / 2.0);
+
+        // Determina si la falta ocurrió dentro del area grande (penal)
+        boolean esPenal = cancha.getAreaGrande(saqueLocal).contains(centroX, centroY);
+        if (esPenal) {
+            int px = cancha.getPuntoPenalX(saqueLocal);
+            int py = cancha.getPuntoPenalY();
+            Jugador ejecutorPenal = seleccionarCobradorCampo(saqueLocal, px, py);
+            programarReanudacion(
+                TipoReanudacion.PENAL,
+                ejecutorPenal,
+                saqueLocal,
+                px,
+                py,
+                "⚠️ Penal por falta de " + infractor.getNombre()
+            );
+            registrarSonido(TipoSonido.PENAL);
+        } else {
+            java.awt.Point punto = cancha.normalizarPuntoLibreIndirecto(centroX, centroY);
+            Jugador ejecutor = seleccionarCobradorCampo(saqueLocal, punto.x, punto.y);
+            programarReanudacion(
+                TipoReanudacion.LIBRE_INDIRECTO,
+                ejecutor,
+                saqueLocal,
+                punto.x,
+                punto.y,
+                "🛑 Falta de " + infractor.getNombre()
+            );
+            // Registrar sonido de falta breve; el saque será sonorizado al ejecutar la reanudación
+            double intensidadFalta = Math.max(0.28, Math.min(1.0, severidad / 1.18 + 0.12));
+            registrarSonido(TipoSonido.FALTA, intensidadFalta);
+            if (severidad > 0.60) {
+                registrarSonido(TipoSonido.QUEJIDO, Math.min(1.0, severidad));
+            }
+        }
+
         infractor.registrarFaltaCometida();
         String mensajeTarjeta = aplicarTarjetaFalta(infractor, tarjeta);
         EstadoArbitraje estadoArbitraje = switch (tarjeta) {
@@ -2385,9 +2410,15 @@ public class MotorJuego {
             case ROJA -> EstadoArbitraje.TARJETA_ROJA;
             default -> EstadoArbitraje.MARCA_FALTA;
         };
-        activarAccionArbitro(estadoArbitraje, DURACION_ACCION_ARBITRO_LARGA_FRAMES, punto.x, punto.y, true);
+        // Muestra la acción del arbitro en pantalla
+        activarAccionArbitro(estadoArbitraje, DURACION_ACCION_ARBITRO_LARGA_FRAMES, centroX, centroY, true);
         eventoTransitorio = saqueLocal ? EventoJuego.FALTA_A_FAVOR : EventoJuego.FALTA_EN_CONTRA;
-        registrarSonido(TipoSonido.SAQUE);
+
+        // Sonido de tarjeta (si aplica)
+        if (tarjeta != TipoTarjeta.NINGUNA) {
+            registrarSonido(TipoSonido.TARJETA);
+        }
+
         narrar(
             mensajeTarjeta == null
                 ? "🛑 El arbitro marca falta de " + infractor.getNombre()
@@ -2427,7 +2458,8 @@ public class MotorJuego {
         double disciplina = (50 - barrendero.getDisciplina()) * 0.0048;
         double lectura = (50 - barrendero.getInteligencia()) * 0.0032;
         double ventajaPoseedor = (poseedor.getInteligencia() - barrendero.getInteligencia()) * 0.0025;
-        double base = 0.06 + severidad * 0.44 + ventajaDistancia * 0.12 + disciplina + lectura + ventajaPoseedor - tecnica;
+        // Leve aumento de base para hacer faltas mínimamente más probables.
+        double base = 0.075 + severidad * 0.44 + ventajaDistancia * 0.12 + disciplina + lectura + ventajaPoseedor - tecnica;
         if (!exito) {
             base += 0.10;
         }
@@ -2481,6 +2513,8 @@ public class MotorJuego {
         if (!barridaLimpia) {
             castigoStamina += 2.5;
         }
+        // Ajuste fino: reducir impacto de faltas en stamina (80% del valor calculado)
+        castigoStamina *= 0.8;
         victima.gastarStamina(castigoStamina);
 
         if (hayLesionPorFalta(victima, severidad, tarjeta)) {
@@ -2525,6 +2559,7 @@ public class MotorJuego {
             infractor.recibirRojaDirecta();
             aplicarExpulsionJugador(infractor);
             mostrarTextoSaque("🟥 Roja para " + infractor.getNombre());
+            registrarSonido(TipoSonido.TARJETA);
             return "roja";
         }
 
@@ -2532,9 +2567,11 @@ public class MotorJuego {
         if (expulsion) {
             aplicarExpulsionJugador(infractor);
             mostrarTextoSaque("🟨🟥 Segunda amarilla y roja para " + infractor.getNombre());
+            registrarSonido(TipoSonido.TARJETA);
             return "segunda amarilla y roja";
         }
         mostrarTextoSaque("🟨 Amarilla para " + infractor.getNombre());
+        registrarSonido(TipoSonido.TARJETA);
         return "amarilla";
     }
 
@@ -4876,6 +4913,9 @@ public class MotorJuego {
             case LIBRE_INDIRECTO:
                 prepararFormacionLibreIndirecto(saqueLocal, ejecutor, x, y);
                 break;
+            case PENAL:
+                prepararFormacionPenal(saqueLocal, ejecutor, x, y);
+                break;
             case INICIAL:
                 reposicionarEquiposParaSaqueInicial(saqueLocal);
                 break;
@@ -4936,6 +4976,51 @@ public class MotorJuego {
         }
         balonEnManos = poseedorBalon != null && debeIrEnManosEnReanudacion(tipoActual, poseedorBalon);
         cooldownCapturaLibreFrames = Math.max(cooldownCapturaLibreFrames, 6);
+        // Manejo especial para penales: disparo inmediato para NPCs, y preparación para jugador humano.
+        if (tipoActual == TipoReanudacion.PENAL) {
+            // Si el ejecutor es el jugador principal y no estamos en modo espectador,
+            // dejamos que el flujo genérico maneje la entrada de usuario (apuntar/cargar).
+            if (poseedorBalon == jugadorPrincipal && !modoEspectador) {
+                // no disparamos automáticamente; el código más abajo habilitará el auto-saque de usuario
+            } else {
+                // Para NPCs (o cuando el jugador no controla), ejecutamos el penal automáticamente.
+                if (poseedorBalon != null) {
+                    // Asegura que el balón está en el punto penal.
+                    if (balon != null) {
+                        balon.setPosicion(saquePendienteX - balon.getAncho() / 2.0, saquePendienteY - balon.getAlto() / 2.0);
+                        balon.fijarAltura(0.0);
+                        balon.fijarVelocidades(0.0, 0.0, 0.0);
+                    }
+
+                    double dirX = saquePendienteLocal ? 1.0 : -1.0;
+                    double dirY = 0.0;
+                    double[] direccion = new double[] { dirX, dirY };
+
+                    double energia = energiaRelativa(poseedorBalon);
+                    double factorPotencia = 0.88 + (energia - 0.5) * 0.24; // favorece mayor potencia si hay energia
+                    factorPotencia = Math.max(0.6, Math.min(1.0, factorPotencia));
+                    double fuerza = interpolarFuerza(FUERZA_TIRO_MIN, FUERZA_TIRO_MAX, factorPotencia);
+                    double elevacion = 1.8 + (1.0 - energia) * 1.2;
+
+                    // Ejecuta el disparo desde el poseedor.
+                    ejecutarTiro(new EntradaJuego(), Math.max(0.85, factorPotencia));
+                    // registrar sonido de penal/tiro
+                    registrarSonido(TipoSonido.PENAL);
+                    registrarSonido(TipoSonido.TIRO, intensidadPorFuerza(fuerza, FUERZA_TIRO_MIN, FUERZA_TIRO_MAX));
+
+                    // Liberar la posesion para que la fisica del balon decida el resultado.
+                    poseedorBalon = null;
+                    balonLibre = true;
+                    tipoReanudacionPendiente = TipoReanudacion.NINGUNA;
+                    ejecutorReanudacion = null;
+                    return;
+                } else {
+                    // Aun no asignado, esperar un frame para recolocacion.
+                    framesRetrasoSaque = 1;
+                    return;
+                }
+            }
+        }
         if (tipoActual == TipoReanudacion.META && poseedorBalon != null && esPortero(poseedorBalon)) {
             ejecutarSaqueLargoPortero(poseedorBalon, saquePendienteLocal);
         } else {
@@ -5216,6 +5301,7 @@ public class MotorJuego {
         NINGUNA,
         BANDA,
         LIBRE_INDIRECTO,
+        PENAL,
         META,
         ESQUINA,
         INICIAL
@@ -5332,6 +5418,43 @@ public class MotorJuego {
 
         int referenciaX = x + (saqueLocal ? 56 : -56);
         colocarDefensasReanudacion(defensores, referenciaX, y);
+        ubicarEjecutorDetrasDelBalon(ejecutor, saqueLocal, x, y);
+    }
+
+    private void prepararFormacionPenal(boolean saqueLocal, Jugador ejecutor, int x, int y) {
+        Jugador[] atacantes = saqueLocal ? getLocales() : getRivales();
+        Jugador[] defensores = saqueLocal ? getRivales() : getLocales();
+
+        // Coloca atacantes alejados del punto para dar espacio al ejecutor.
+        int offsetAtaqueX = saqueLocal ? -140 : 140;
+        int idx = 0;
+        for (Jugador atacante : atacantes) {
+            if (atacante == ejecutor) {
+                continue;
+            }
+            int objetivoX = x + offsetAtaqueX;
+            int objetivoY = cancha.getCentroY() + (idx % 2 == 0 ? 40 : -40);
+            colocarJugador(atacante, objetivoX, objetivoY);
+            idx++;
+        }
+
+        // Coloca defensores en una linea lejana para simular el despeje.
+        int referenciaX = x + (saqueLocal ? 180 : -180);
+        colocarDefensasReanudacion(defensores, referenciaX, cancha.getCentroY());
+
+        // Coloca al portero defensor centrado en la porteria.
+        Jugador defensorPortero = saqueLocal ? porteroRival : porteroLocal;
+        java.awt.Rectangle porteria = cancha.getPorteria(!saqueLocal);
+        int porteroX = porteria.x + porteria.width / 2 - defensorPortero.getAncho() / 2;
+        int porteroY = porteria.y + porteria.height / 2 - defensorPortero.getAlto() / 2;
+        colocarJugador(defensorPortero, porteroX, porteroY);
+
+        // Coloca el balon en el punto penal y posiciona al ejecutor justo detras.
+        if (balon != null) {
+            balon.setPosicion(x - balon.getAncho() / 2.0, y - balon.getAlto() / 2.0);
+            balon.fijarAltura(0.0);
+            balon.fijarVelocidades(0.0, 0.0, 0.0);
+        }
         ubicarEjecutorDetrasDelBalon(ejecutor, saqueLocal, x, y);
     }
 
@@ -5525,6 +5648,12 @@ public class MotorJuego {
     private void actualizarHidratacionBanca() {
         // La hidratacion es fija en banca: quien llega agotado recupera energia.
         hidratacionBanca.actualizar();
+        // No procesar hidratación activa durante el tiempo de juego;
+        // sólo permitir recuperación en medio tiempo o cuando el partido
+        // ya finalizó por tiempo.
+        if (!medioTiempoActivo && !partidoFinalizadoPorTiempo) {
+            return;
+        }
         if (!hidratacionBanca.estaDisponible()) {
             if (!hidratacionAgotadaAnunciada && hidratacionBanca.getUsosRestantes() <= 0) {
                 hidratacionAgotadaAnunciada = true;
@@ -5544,8 +5673,10 @@ public class MotorJuego {
             if (!hidratacionBanca.consumirUso()) {
                 return;
             }
-            // Recuperacion casi completa al hidratarse
-            jugador.recuperarStamina(jugador.getStaminaMax() * 0.9);
+            // Recuperacion completa al hidratarse
+            jugador.recuperarStamina(jugador.getStaminaMax());
+            // Proteger al jugador durante unos segundos para evitar nuevo gasto inmediato
+            jugador.iniciarHidratacion(ConfiguracionJuego.FPS * 6);
             hidratacionBanca.activarCooldown(ConfiguracionJuego.COOLDOWN_HIDRATACION_BANCA);
             narrar("💧 " + jugador.getNombre() + " se hidrata en la banca", false);
             break;
@@ -6675,6 +6806,13 @@ public class MotorJuego {
     }
 
     private boolean debeBuscarHidratacion(Jugador jugador, boolean equipoLocal, double energia) {
+        // Sólo permitir que los jugadores vayan por hidratación cuando
+        // estamos en medio tiempo o ya terminó el partido. Mientras
+        // estén jugando, deben centrarse en el juego.
+        if (!medioTiempoActivo && !partidoFinalizadoPorTiempo) {
+            return false;
+        }
+
         if (esPortero(jugador) || !hidratacionBanca.estaDisponible()) {
             return false;
         }

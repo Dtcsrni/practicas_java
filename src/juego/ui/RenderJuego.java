@@ -3,6 +3,7 @@ package juego.ui;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.geom.AffineTransform;
 import java.awt.FontMetrics;
 import java.awt.GradientPaint;
 import java.awt.Graphics;
@@ -28,6 +29,7 @@ import juego.core.EstadoJuego;
 import juego.core.GeometriaCancha;
 import juego.core.MaquinaEstadosJuego;
 import juego.core.MotorJuego;
+import juego.sonido.MusicaInicio;
 import juego.entidades.Jugador;
 
 // Renderizador 2D del partido: fondo, cancha, entidades, HUD y menus animados.
@@ -40,6 +42,16 @@ public class RenderJuego {
     private final Object cacheEntornoLock = new Object();
     private BufferedImage entornoEstaticoCache;
     private long entornoEstaticoSeed = Long.MIN_VALUE;
+    // Estado visual del slider de volumen (hover / active)
+    private volatile boolean sliderHover = false;
+    private volatile boolean sliderActive = false;
+    // Constantes para control de musica en la esquina
+    private static final int MUSIC_ICON_X = ConfiguracionJuego.ANCHO_PANEL - 160;
+    private static final int MUSIC_ICON_Y = 22;
+    private static final int MUSIC_ICON_W = 128;
+    private static final int MUSIC_ICON_H = 26;
+    private static final int MUSIC_ICON_PAD_X = -8;
+    private static final int MUSIC_ICON_PAD_Y = -6;
 
     public RenderJuego() {
         sprites = GestorSprites.getInstancia();
@@ -204,6 +216,29 @@ public class RenderJuego {
 
     private BufferedImage nuevaCapaTransparente() {
         return new BufferedImage(ConfiguracionJuego.ANCHO_PANEL, ConfiguracionJuego.ALTO_PANEL, BufferedImage.TYPE_INT_ARGB);
+    }
+
+    public static java.awt.Rectangle getMusicControlRect() {
+        return new java.awt.Rectangle(MUSIC_ICON_X + MUSIC_ICON_PAD_X, MUSIC_ICON_Y + MUSIC_ICON_PAD_Y, MUSIC_ICON_W, MUSIC_ICON_H);
+    }
+
+    public static java.awt.Rectangle getMusicSliderRect() {
+        int bx = MUSIC_ICON_X + MUSIC_ICON_PAD_X;
+        int by = MUSIC_ICON_Y + MUSIC_ICON_PAD_Y;
+        int sx = bx + 56;
+        int sy = by + MUSIC_ICON_H - 12;
+        int sw = Math.max(48, MUSIC_ICON_W - 64);
+        int sh = 10;
+        return new java.awt.Rectangle(sx, sy, sw, sh);
+    }
+
+    // Permite a PanelJuego notificar hover/active para afinar la visual del knob
+    public void setSliderHover(boolean hover) {
+        this.sliderHover = hover;
+    }
+
+    public void setSliderActive(boolean active) {
+        this.sliderActive = active;
     }
 
     private void dibujarEntornoUrbanoEstatico(Graphics2D g, long seed) {
@@ -1375,23 +1410,23 @@ public class RenderJuego {
         int h = 18;
         int alphaBase = Math.max(72, Math.min(210, 120 + frames * 3));
 
-        Color fondo = new Color(20, 24, 30, alphaBase);
-        Color borde = new Color(255, 240, 160, Math.min(255, alphaBase + 36));
-        Color texto = new Color(255, 246, 188, Math.min(255, alphaBase + 28));
+        Color fondo = new Color(ConfiguracionJuego.HUD_PANEL.getRed(), ConfiguracionJuego.HUD_PANEL.getGreen(), ConfiguracionJuego.HUD_PANEL.getBlue(), Math.max(48, alphaBase));
+        Color borde = new Color(ConfiguracionJuego.HUD_ACCENT.getRed(), ConfiguracionJuego.HUD_ACCENT.getGreen(), ConfiguracionJuego.HUD_ACCENT.getBlue(), Math.min(255, alphaBase + 36));
+        Color texto = new Color(ConfiguracionJuego.HUD_TEXT.getRed(), ConfiguracionJuego.HUD_TEXT.getGreen(), ConfiguracionJuego.HUD_TEXT.getBlue(), Math.min(255, alphaBase + 28));
         if ("FALTA".equals(accion)) {
-            fondo = new Color(72, 22, 20, alphaBase);
+            fondo = new Color(ConfiguracionJuego.HUD_DANGER.getRed(), ConfiguracionJuego.HUD_DANGER.getGreen(), ConfiguracionJuego.HUD_DANGER.getBlue(), alphaBase);
             borde = new Color(255, 132, 112, Math.min(255, alphaBase + 32));
             texto = new Color(255, 220, 214, Math.min(255, alphaBase + 28));
         } else if ("AMARILLA".equals(accion)) {
-            fondo = new Color(102, 82, 12, alphaBase);
+            fondo = new Color(ConfiguracionJuego.HUD_WARN.getRed(), ConfiguracionJuego.HUD_WARN.getGreen(), ConfiguracionJuego.HUD_WARN.getBlue(), alphaBase);
             borde = new Color(255, 220, 90, Math.min(255, alphaBase + 32));
             texto = new Color(255, 246, 190, Math.min(255, alphaBase + 28));
         } else if ("ROJA".equals(accion)) {
-            fondo = new Color(108, 16, 16, alphaBase);
+            fondo = new Color(ConfiguracionJuego.HUD_DANGER.getRed(), ConfiguracionJuego.HUD_DANGER.getGreen(), ConfiguracionJuego.HUD_DANGER.getBlue(), alphaBase);
             borde = new Color(255, 94, 94, Math.min(255, alphaBase + 32));
             texto = new Color(255, 230, 230, Math.min(255, alphaBase + 28));
         } else if ("GOL".equals(accion)) {
-            fondo = new Color(22, 64, 36, alphaBase);
+            fondo = new Color(ConfiguracionJuego.HUD_ACCENT.getRed() / 2, ConfiguracionJuego.HUD_ACCENT.getGreen() / 2, ConfiguracionJuego.HUD_ACCENT.getBlue() / 2, alphaBase);
             borde = new Color(118, 246, 172, Math.min(255, alphaBase + 32));
             texto = new Color(224, 255, 236, Math.min(255, alphaBase + 28));
         }
@@ -1402,6 +1437,53 @@ public class RenderJuego {
         g.drawRoundRect(x, y, w, h, 10, 10);
         g.setColor(texto);
         g.drawString(accion, x + (w - fm.stringWidth(accion)) / 2, y + 13);
+
+        // Animacion de tarjeta si corresponde
+        if ("AMARILLA".equals(accion) || "ROJA".equals(accion)) {
+            dibujarAnimacionTarjeta(g, motor, arbitro, accion, motor.getFramesAccionArbitro());
+            // dibujar icono de tarjeta al lado si cabe
+            BufferedImage icon = GestorSprites.getInstancia().getIconTarjeta("ROJA".equals(accion));
+            if (icon != null) {
+                int ix = x - icon.getWidth() - 8;
+                int iy = y - 4;
+                if (ix < 6) ix = x + w - icon.getWidth() - 6;
+                g.drawImage(icon, ix, iy, null);
+            }
+        }
+    }
+
+    private void dibujarAnimacionTarjeta(Graphics2D g, MotorJuego motor, Jugador arbitro, String accion, int framesRestantes) {
+        int duracionEstim = (int) Math.round(ConfiguracionJuego.FPS * 1.6); // coincide con DURACION_ACCION_ARBITRO_LARGA_FRAMES
+        double progreso = 1.0 - (framesRestantes / (double) Math.max(1, duracionEstim));
+        progreso = Math.max(0.0, Math.min(1.0, progreso));
+        // easing suave
+        double ease = 1.0 - Math.pow(1.0 - progreso, 3.0);
+
+        int cardW = 22;
+        int cardH = 34;
+        int baseX = arbitro.getX() + arbitro.getAncho() / 2;
+        int startY = arbitro.getY() + arbitro.getAlto() / 2;
+        int targetY = arbitro.getY() - 48;
+        int cardX = baseX + 10;
+        int cardY = (int) Math.round(startY + (targetY - startY) * ease);
+
+        Color cardColor = "AMARILLA".equals(accion)
+            ? new Color(255, 210, 32, 238)
+            : new Color(220, 36, 36, 238);
+
+        // Sombra
+        g.setColor(new Color(0, 0, 0, Math.max(24, (int) (80 * progreso))));
+        g.fillRoundRect(cardX + 4, cardY + 6, cardW, cardH, 6, 6);
+
+        AffineTransform antes = g.getTransform();
+        double rot = Math.toRadians((1.0 - ease) * 40.0 - 8.0);
+        g.translate(cardX + cardW / 2.0, cardY + cardH / 2.0);
+        g.rotate(rot);
+        g.setColor(cardColor);
+        g.fillRoundRect(-cardW / 2, -cardH / 2, cardW, cardH, 8, 8);
+        g.setColor(new Color(255, 255, 255, Math.max(48, (int) (160 * progreso))));
+        g.drawRoundRect(-cardW / 2, -cardH / 2, cardW, cardH, 8, 8);
+        g.setTransform(antes);
     }
 
     private void dibujarParticulasJuego(Graphics2D g, MotorJuego motor) {
@@ -1438,9 +1520,9 @@ public class RenderJuego {
     private void dibujarTarjetaGlass(Graphics2D g, int x, int y, int ancho, int alto, Color a, Color b) {
         g.setPaint(new GradientPaint(x, y, a, x + ancho, y + alto, b));
         g.fillRoundRect(x, y, ancho, alto, 18, 18);
-        g.setColor(new Color(255, 255, 255, 66));
+        g.setColor(new Color(ConfiguracionJuego.HUD_TEXT.getRed(), ConfiguracionJuego.HUD_TEXT.getGreen(), ConfiguracionJuego.HUD_TEXT.getBlue(), 66));
         g.drawRoundRect(x, y, ancho, alto, 18, 18);
-        g.setColor(new Color(255, 255, 255, 28));
+        g.setColor(new Color(ConfiguracionJuego.HUD_TEXT.getRed(), ConfiguracionJuego.HUD_TEXT.getGreen(), ConfiguracionJuego.HUD_TEXT.getBlue(), 28));
         g.fillRoundRect(x + 8, y + 8, ancho - 16, 16, 12, 12);
     }
 
@@ -1449,40 +1531,43 @@ public class RenderJuego {
         int y = 16;
         int ancho = 182;
         int alto = 64;
-        dibujarTarjetaGlass(g, x, y, ancho, alto, new Color(8, 20, 30, 188), new Color(24, 48, 42, 182));
+        // Usar paleta HUD para la tarjeta del marcador
+        Color a = new Color(ConfiguracionJuego.HUD_PANEL.getRed(), ConfiguracionJuego.HUD_PANEL.getGreen(), ConfiguracionJuego.HUD_PANEL.getBlue(), 188);
+        Color b = new Color(Math.max(0, ConfiguracionJuego.HUD_PANEL.getRed() - 8), Math.max(0, ConfiguracionJuego.HUD_PANEL.getGreen() - 12), Math.max(0, ConfiguracionJuego.HUD_PANEL.getBlue() - 6), 182);
+        dibujarTarjetaGlass(g, x, y, ancho, alto, a, b);
 
         g.setFont(new Font("SansSerif", Font.BOLD, 11));
-        g.setColor(new Color(255, 228, 170));
+        g.setColor(ConfiguracionJuego.HUD_ACCENT);
         g.drawString("MARCADOR", x + 12, y + 17);
         g.setFont(new Font("SansSerif", Font.PLAIN, 10));
-        g.setColor(new Color(230, 236, 240));
+        g.setColor(ConfiguracionJuego.HUD_TEXT);
         g.drawString(recortarTexto(motor.getNombreEquipoLocal(), 9), x + 12, y + 30);
         g.drawString(recortarTexto(motor.getNombreEquipoRival(), 9), x + 110, y + 30);
 
-        g.setColor(new Color(232, 88, 68));
+        g.setColor(ConfiguracionJuego.HUD_DANGER);
         g.setFont(new Font("SansSerif", Font.BOLD, 26));
         g.drawString(String.valueOf(motor.getGolesLocal()), x + 16, y + 58);
 
-        g.setColor(new Color(245, 245, 245));
+        g.setColor(ConfiguracionJuego.HUD_TEXT);
         g.setFont(new Font("SansSerif", Font.BOLD, 20));
         g.drawString("-", x + 48, y + 56);
 
-        g.setColor(new Color(70, 180, 245));
+        g.setColor(ConfiguracionJuego.TEAM_RIVAL);
         g.setFont(new Font("SansSerif", Font.BOLD, 26));
         g.drawString(String.valueOf(motor.getGolesRival()), x + 80, y + 58);
 
         g.setFont(new Font("SansSerif", Font.BOLD, 10));
-        g.setColor(new Color(255, 214, 120));
+        g.setColor(ConfiguracionJuego.HUD_ACCENT);
         g.drawString(motor.getAbreviaturaEquipoLocal(), x + 12, y + 43);
-        g.setColor(new Color(120, 214, 255));
+        g.setColor(ConfiguracionJuego.TEAM_RIVAL);
         g.drawString(motor.getAbreviaturaEquipoRival(), x + 110, y + 43);
 
-        g.setColor(new Color(248, 236, 188));
+        g.setColor(ConfiguracionJuego.HUD_TEXT);
         g.setFont(new Font("SansSerif", Font.BOLD, 14));
         g.drawString(motor.getTiempoPartidoTexto(), x + ancho - 50, y + 26);
 
         if (motor.isModoEspectador()) {
-            g.setColor(new Color(255, 221, 126));
+            g.setColor(ConfiguracionJuego.HUD_ACCENT);
             g.setFont(new Font("SansSerif", Font.BOLD, 10));
             g.drawString("ESP", x + ancho - 30, y + 17);
         }
@@ -1493,7 +1578,10 @@ public class RenderJuego {
         int x = ConfiguracionJuego.ANCHO_PANEL - ancho - 18;
         int y = 16;
         int alto = 82;
-        dibujarTarjetaGlass(g, x, y, ancho, alto, new Color(10, 18, 24, 182), new Color(18, 34, 42, 176));
+        // Usar paleta HUD para la tarjeta de estado
+        Color a = new Color(ConfiguracionJuego.HUD_PANEL.getRed(), ConfiguracionJuego.HUD_PANEL.getGreen(), ConfiguracionJuego.HUD_PANEL.getBlue(), 182);
+        Color b = new Color(Math.max(0, ConfiguracionJuego.HUD_PANEL.getRed() - 6), Math.max(0, ConfiguracionJuego.HUD_PANEL.getGreen() - 8), Math.max(0, ConfiguracionJuego.HUD_PANEL.getBlue() - 10), 176);
+        dibujarTarjetaGlass(g, x, y, ancho, alto, a, b);
 
         Jugador principal = motor.getJugadorPrincipal();
         String lineaNombre = recortarTexto(principal.getNombre(), 16) + "  #" + principal.getNumeroCamiseta();
@@ -1502,15 +1590,22 @@ public class RenderJuego {
         String lineaDisciplina = "Disciplina: " + resumirDisciplina(principal);
 
         g.setFont(new Font("SansSerif", Font.BOLD, 12));
-        g.setColor(new Color(244, 236, 208));
+        g.setColor(ConfiguracionJuego.HUD_TEXT);
         g.drawString(motor.isModoEspectador() ? "MODO ESPECTADOR" : "JUGADOR ACTIVO", x + 12, y + 18);
         g.setFont(new Font("SansSerif", Font.PLAIN, 11));
-        g.setColor(new Color(236, 236, 236));
+        g.setColor(ConfiguracionJuego.HUD_TEXT);
         g.drawString(lineaNombre, x + 12, y + 34);
+        // Icono de bota si turbo activo
+        BufferedImage iconB = sprites.getIconBota();
+        if (iconB != null && principal.tieneTurboActivo()) {
+            int ix = x + ancho - iconB.getWidth() - 12;
+            int iy = y + 10;
+            g.drawImage(iconB, ix, iy, null);
+        }
         g.drawString(lineaJuego, x + 12, y + 49);
         g.drawString(lineaEstado, x + 12, y + 64);
         g.setFont(new Font("SansSerif", Font.PLAIN, 10));
-        g.setColor(new Color(190, 208, 220));
+        g.setColor(ConfiguracionJuego.HUD_ACCENT);
         g.drawString(lineaDisciplina, x + 12, y + 74);
 
         int barraX = x + 138;
@@ -1519,20 +1614,29 @@ public class RenderJuego {
         int barraH = 7;
         double energia = motor.getStaminaPrincipalPorcentaje() / 100.0;
         int relleno = (int) Math.round(barraW * energia);
-        Color colorEnergia = energia > 0.55 ? new Color(86, 218, 126) : (energia > 0.25 ? new Color(255, 196, 84) : new Color(255, 102, 84));
+        Color colorEnergia = energia > 0.55 ? ConfiguracionJuego.HUD_ACCENT : (energia > 0.25 ? ConfiguracionJuego.HUD_WARN : ConfiguracionJuego.HUD_DANGER);
 
         g.setFont(new Font("SansSerif", Font.BOLD, 10));
-        g.setColor(new Color(255, 226, 150));
+        g.setColor(ConfiguracionJuego.HUD_ACCENT);
         g.drawString("ENERGIA", x + 138, y + 16);
-        g.setColor(new Color(244, 244, 244));
+        g.setColor(ConfiguracionJuego.HUD_TEXT);
         g.drawString(motor.getStaminaPrincipalPorcentaje() + "%", x + ancho - 34, y + 16);
 
-        g.setColor(new Color(16, 16, 16, 190));
+        g.setColor(new Color(0, 0, 0, 190));
         g.fillRoundRect(barraX, barraY, barraW, barraH, 8, 8);
         g.setColor(colorEnergia);
         g.fillRoundRect(barraX, barraY, Math.max(3, relleno), barraH, 8, 8);
-        g.setColor(new Color(255, 255, 255, 90));
+        g.setColor(new Color(ConfiguracionJuego.HUD_TEXT.getRed(), ConfiguracionJuego.HUD_TEXT.getGreen(), ConfiguracionJuego.HUD_TEXT.getBlue(), 90));
         g.drawRoundRect(barraX, barraY, barraW, barraH, 8, 8);
+
+        // Dibujar icono de hidratacion cerca de la barra
+        BufferedImage iconH = sprites.getIconHidratacion();
+        if (iconH != null) {
+            int ix = barraX - iconH.getWidth() - 8;
+            int iy = barraY - ((iconH.getHeight() - barraH) / 2);
+            if (ix < x + 12) ix = x + 12;
+            g.drawImage(iconH, ix, iy, null);
+        }
 
     }
 
@@ -1621,8 +1725,13 @@ public class RenderJuego {
             int y = cy + dy - 28;
             int w = 6 + rnd.nextInt(6);
             int h = 6 + rnd.nextInt(6);
-            Color[] paleta = new Color[] { new Color(255, 212, 96, 200), new Color(118, 214, 255, 200), new Color(255, 120, 120, 200), new Color(140, 255, 180, 200) };
-            Color c = paleta[rnd.nextInt(paleta.length)];
+                Color[] paleta = new Color[] {
+                    new Color(ConfiguracionJuego.HUD_ACCENT.getRed(), ConfiguracionJuego.HUD_ACCENT.getGreen(), ConfiguracionJuego.HUD_ACCENT.getBlue(), 200),
+                    new Color(118, 214, 255, 200),
+                    new Color(ConfiguracionJuego.HUD_WARN.getRed(), ConfiguracionJuego.HUD_WARN.getGreen(), ConfiguracionJuego.HUD_WARN.getBlue(), 200),
+                    new Color(140, 255, 180, 200)
+                };
+                Color c = paleta[rnd.nextInt(paleta.length)];
             g.setColor(c);
             g.fillOval(x, y, w, h);
         }
@@ -1644,6 +1753,13 @@ public class RenderJuego {
         double progreso = (factor - 0.35) / (1.00 - 0.35);
         progreso = Math.max(0.0, Math.min(1.0, progreso));
         int anchoRelleno = (int) Math.round(ancho * progreso);
+
+        // Evitar solapamiento con la tarjeta de estado en la esquina superior derecha.
+        java.awt.Rectangle rectBarra = new java.awt.Rectangle(x, y, ancho, alto);
+        java.awt.Rectangle rectTarjetaEstado = new java.awt.Rectangle(ConfiguracionJuego.ANCHO_PANEL - 214 - 18, 16, 214, 82);
+        if (rectBarra.intersects(rectTarjetaEstado)) {
+            y = rectTarjetaEstado.y + rectTarjetaEstado.height + 8; // desplazar justo debajo
+        }
 
         g.setColor(new Color(20, 20, 20, 190));
         g.fillRoundRect(x, y, ancho, alto, 10, 10);
@@ -2017,6 +2133,12 @@ public class RenderJuego {
 
     private void dibujarPantallaInicio(Graphics2D g, boolean inicioModoEspectador) {
         double entrada = progresoEntrada(34);
+        // Fondo dinámico más vivo para una entrada más llamativa
+        float hue = (float) (0.55 + Math.sin(relojUI * 0.012) * 0.06);
+        Color bgA = Color.getHSBColor(hue, 0.46f, 0.12f);
+        Color bgB = Color.getHSBColor((float) (hue + 0.08f), 0.82f, 0.28f);
+        g.setPaint(new java.awt.GradientPaint(0, 0, bgA, ConfiguracionJuego.ANCHO_PANEL, ConfiguracionJuego.ALTO_PANEL, bgB));
+        g.fillRect(0, 0, ConfiguracionJuego.ANCHO_PANEL, ConfiguracionJuego.ALTO_PANEL);
         dibujarFondoOverlay(g, alpha(145 + entrada * 18.0));
 
         int xBase = ConfiguracionJuego.ANCHO_PANEL / 2 - 360;
@@ -2031,6 +2153,9 @@ public class RenderJuego {
         int botonY = yBase + alto - 72;
 
         g.drawImage(sprites.getPanelMenu(), xBase, yBase, ancho, alto, null);
+
+        // Logo grande animado encima del menu
+        dibujarLogoInicio(g, ConfiguracionJuego.ANCHO_PANEL / 2, yBase + 64);
 
         dibujarParticulasMenu(g, xBase, yBase, ancho, alto);
         dibujarDecoracionBienvenida(g, xBase, yBase, ancho, alto);
@@ -2059,6 +2184,122 @@ public class RenderJuego {
 
         dibujarControlesAnimados(g, panelX, panelY, panelW, panelH, inicioModoEspectador);
         dibujarBotonInicioAnimado(g, panelX, botonY, panelW, 52);
+
+        // Indicador e interfaz de musica (clickable)
+        boolean musicaOn = MusicaInicio.getInstancia().isPlaying() && !MusicaInicio.getInstancia().isMuted();
+        int iconX = MUSIC_ICON_X;
+        int iconY = MUSIC_ICON_Y;
+        int bx = iconX + MUSIC_ICON_PAD_X;
+        int by = iconY + MUSIC_ICON_PAD_Y;
+        g.setColor(new Color(0, 0, 0, 96));
+        g.fillRoundRect(bx, by, MUSIC_ICON_W, MUSIC_ICON_H, 10, 10);
+
+        // Dibuja icono de altavoz
+        int sx = bx + 8;
+        int sy = by + (MUSIC_ICON_H - 14) / 2;
+        int sw = 12;
+        int sh = 14;
+        g.setColor(new Color(245, 245, 245, 220));
+        g.fillRect(sx, sy + 4, 4, 6);
+        int[] px = { sx + 4, sx + 4 + 8, sx + 4 };
+        int[] py = { sy, sy + 7, sy + 14 };
+        g.fillPolygon(px, py, 3);
+
+        // Barras animadas (indicador de reproducción)
+        int barsX = sx + sw + 8;
+        int barsY = by + (MUSIC_ICON_H - 12) / 2;
+        int barsW = 6;
+        int gap = 4;
+        for (int i = 0; i < 4; i++) {
+            double fase = relojUI * 0.08 + i * 0.9;
+            int h = 4 + (int) (Math.abs(Math.sin(fase)) * 12.0 * (musicaOn ? 1.0 : 0.28));
+            int byBar = barsY + (12 - h);
+            g.setColor(musicaOn ? new Color(88, 220, 120) : new Color(206, 206, 206, 160));
+            g.fillRoundRect(barsX + i * (barsW + gap), byBar, barsW, h, 3, 3);
+        }
+
+        // Texto indicador
+        g.setFont(new Font("SansSerif", Font.BOLD, 14));
+        g.setColor(musicaOn ? new Color(88, 220, 120) : new Color(206, 206, 206));
+        String textoMus = "M - Música: " + (musicaOn ? "ON" : "OFF");
+        g.drawString(textoMus, bx + 56, by + 16);
+
+        // Slider de volumen dentro del cuadro de control (fondo, porción llena y knob)
+        java.awt.Rectangle sliderRect = getMusicSliderRect();
+        MusicaInicio mi = MusicaInicio.getInstancia();
+        double vol = mi.getVolumen();
+        int slx = sliderRect.x;
+        int sly = sliderRect.y;
+        int srw = sliderRect.width;
+        int srh = sliderRect.height;
+        // Fondo de la barra con suave gradiente
+        java.awt.GradientPaint fondo = new java.awt.GradientPaint(slx, sly, new Color(34, 36, 40, 220), slx + srw, sly, new Color(28, 30, 34, 220));
+        g.setPaint(fondo);
+        g.fillRoundRect(slx, sly, srw, srh, srh, srh);
+        // Porción llena con gradiente
+        int filled = (int) Math.round(srw * Math.max(0.0, Math.min(1.0, vol)));
+        java.awt.GradientPaint relleno = new java.awt.GradientPaint(slx, sly, new Color(102, 230, 142), slx + Math.max(8, filled), sly, new Color(64, 196, 110));
+        g.setPaint(relleno);
+        g.fillRoundRect(slx, sly, Math.max(4, filled), srh, srh, srh);
+        // Knob (centrado en el extremo de la porción llena)
+        int knobCenterX = slx + Math.max(3, Math.min(srw - 3, filled));
+        int knobW = srh + 8;
+        int knobH = srh + 8;
+        int knobX = knobCenterX - knobW / 2;
+        int knobY = sly - (knobH - srh) / 2;
+        // Sombra del knob
+        g.setColor(new Color(0, 0, 0, 96));
+        g.fillOval(knobX + 1, knobY + 2, knobW, knobH);
+        // Cuerpo exterior del knob
+        Color knobOuter = sliderActive ? new Color(18, 18, 22) : new Color(28, 30, 34);
+        g.setColor(knobOuter);
+        g.fillOval(knobX, knobY, knobW, knobH);
+        // Brillo interior
+        java.awt.GradientPaint knobGrad = new java.awt.GradientPaint(knobX, knobY, new Color(255, 255, 255, 220), knobX, knobY + knobH, new Color(220, 220, 220, 48));
+        g.setPaint(knobGrad);
+        g.fillOval(knobX + 2, knobY + 2, knobW - 4, knobH - 4);
+        // Borde sutil
+        g.setColor(new Color(0, 0, 0, 120));
+        g.setStroke(new BasicStroke(1f));
+        g.drawOval(knobX, knobY, knobW, knobH);
+        // Glow si hover/active
+        if (sliderHover || sliderActive) {
+            g.setColor(new Color(88, 220, 120, 48));
+            for (int i = 0; i < 3; i++) {
+                int pad = 3 + i * 3;
+                g.drawOval(knobX - pad, knobY - pad, knobW + pad * 2, knobH + pad * 2);
+            }
+        }
+        // Texto porcentaje a la derecha del slider
+        g.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        g.setColor(new Color(220, 220, 220, 200));
+        String pct = Math.max(0, Math.min(100, (int) Math.round(vol * 100))) + "%";
+        g.drawString(pct, slx + srw + 8, sly + srh);
+    }
+
+    private void dibujarLogoInicio(Graphics2D g, int cx, int cy) {
+        int size = 150;
+        AffineTransform prev = g.getTransform();
+        g.translate(cx, cy);
+        double rot = Math.sin(relojUI * 0.018) * 0.06;
+        g.rotate(rot);
+
+        int half = size / 2;
+        Color a = new Color(255, 198, 88);
+        Color b = new Color(255, 110, 72);
+        g.setPaint(new GradientPaint(-half, -half, a, half, half, b));
+        g.fillOval(-half, -half, size, size);
+        g.setColor(new Color(24, 24, 30, 180));
+        g.drawOval(-half, -half, size, size);
+
+        g.setFont(new Font("SansSerif", Font.BOLD, 28));
+        g.setColor(new Color(24, 24, 30));
+        String title = "LA CANCHITA";
+        java.awt.FontMetrics fm = g.getFontMetrics();
+        int tw = fm.stringWidth(title);
+        g.drawString(title, -tw / 2, 6);
+
+        g.setTransform(prev);
     }
 
     private void dibujarDecoracionBienvenida(Graphics2D g, int x, int y, int w, int h) {
