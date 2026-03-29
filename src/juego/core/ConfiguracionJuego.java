@@ -1,5 +1,7 @@
 package juego.core;
 
+import java.awt.Color;
+
 // Configuracion central del partido, la cancha y la ventana.
 public final class ConfiguracionJuego {
     private ConfiguracionJuego() {
@@ -13,10 +15,25 @@ public final class ConfiguracionJuego {
     public static final int ALTO_PANEL = 720;
     public static final GeometriaCancha MAPA_CANCHA = GeometriaCancha.crearReglamentariaEscalada(ANCHO_PANEL, ALTO_PANEL);
 
+    // Paleta y colores reutilizables para HUD y renderizado de cancha
+    public static final Color HUD_BG = new Color(16, 18, 24);
+    public static final Color HUD_PANEL = new Color(28, 30, 34, 220);
+    public static final Color HUD_TEXT = new Color(245, 245, 245);
+    public static final Color HUD_ACCENT = new Color(88, 220, 120);
+    public static final Color HUD_WARN = new Color(255, 166, 88);
+    public static final Color HUD_DANGER = new Color(220, 36, 36);
+    public static final Color TEAM_RIVAL = new Color(70, 180, 245);
+    public static final Color HUD_INACTIVE = new Color(206, 206, 206);
+
+    // Colores de césped y líneas de cancha
+    public static final Color CESPED_A = new Color(92, 168, 96);
+    public static final Color CESPED_B = new Color(44, 102, 56);
+    public static final Color LINEA_CANCHA = new Color(240, 240, 236);
+
     // Objetivo del partido.
     public static final int META_GOLES = 8;
     // Duracion real de un partido jugable (en segundos de simulacion).
-    public static final int DURACION_PARTIDO_SEGUNDOS = 7 * 60;
+    public static final int DURACION_PARTIDO_SEGUNDOS = 5 * 60;
     // El reloj mostrado se escala a minutos "futbol" para aproximar 90'.
     public static final int MINUTOS_REGLAMENTARIOS = 90;
     // Geometria de la porteria.

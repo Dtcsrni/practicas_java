@@ -5,6 +5,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GradientPaint;
 import java.awt.RadialGradientPaint;
+import java.awt.BasicStroke;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 
@@ -317,62 +318,82 @@ public class Balon extends EntidadJuego {
             g2.fillOval(trailX, trailY, Math.max(8, ancho - trail), Math.max(8, alto - trail));
         }
 
-        float[] dist = { 0.0f, 0.58f, 1.0f };
-        Color[] colores = {
-            new Color(255, 255, 255),
-            new Color(240, 240, 236),
-            new Color(190, 194, 198)
+        // Suave degradado radial para dar volumen, con foco ligeramente desplazado.
+        float[] stops = { 0.0f, 0.6f, 1.0f };
+        Color[] grads = new Color[] {
+            new Color(250, 250, 250, 255),
+            new Color(235, 235, 238, 255),
+            new Color(170, 174, 180, 255)
         };
         g2.setPaint(new RadialGradientPaint(
-            (float) (x + ancho * 0.34),
-            (float) (yRender + alto * 0.28),
-            Math.max(6.0f, ancho * 0.78f),
-            dist,
-            colores
+            (float) (x + ancho * 0.35),
+            (float) (yRender + alto * 0.30),
+            Math.max(8.0f, ancho * 0.60f),
+            stops,
+            grads
         ));
         g2.fillOval(x, yRender, ancho, alto);
-        g2.setPaint(new GradientPaint(x, yRender, new Color(255, 255, 255, 160), x + ancho, yRender + alto, new Color(120, 126, 136, 90)));
+
+        // Contornos más legibles: borde exterior oscuro y sutil borde interior claro.
+        java.awt.Stroke previo = g2.getStroke();
+        g2.setStroke(new BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g2.setColor(new Color(28, 30, 36, 220));
         g2.drawOval(x, yRender, ancho, alto);
-        g2.setColor(new Color(26, 28, 34, 210));
-        g2.drawOval(x, yRender, ancho, alto);
+        g2.setStroke(new BasicStroke(1.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g2.setColor(new Color(255, 255, 255, 90));
+        g2.drawOval(x + 1, yRender + 1, ancho - 2, alto - 2);
+        g2.setStroke(previo);
 
         int centroX = x + ancho / 2;
         int centroY = yRender + alto / 2;
-        int panel = Math.max(4, ancho / 4);
+        int panel = Math.max(6, ancho / 4);
         int oscilacionX = (int) Math.round(Math.cos(anguloAnimacion) * 2.2);
         int oscilacionY = (int) Math.round(Math.sin(anguloAnimacion) * 2.2);
-
-        g2.setColor(new Color(30, 32, 38, 230));
+        // Paneles: centro y ejes mejor definidos, con borde para contraste.
+        Color panelFill = new Color(34, 36, 42, 230);
+        Color panelEdge = new Color(12, 14, 18, 200);
+        g2.setColor(panelFill);
         g2.fillOval(centroX - panel / 2 + oscilacionX, centroY - panel / 2 + oscilacionY, panel, panel);
-        g2.setColor(new Color(16, 18, 22, 170));
-        g2.drawLine(centroX, yRender + 3, centroX + oscilacionX, centroY - panel / 2);
-        g2.drawLine(centroX, centroY + panel / 2, centroX - oscilacionX, yRender + alto - 3);
-        g2.drawLine(x + 3, centroY, centroX - panel / 2 + oscilacionX, centroY + oscilacionY);
-        g2.drawLine(centroX + panel / 2, centroY, x + ancho - 3, centroY - oscilacionY);
+        g2.setColor(panelEdge);
+        g2.drawOval(centroX - panel / 2 + oscilacionX, centroY - panel / 2 + oscilacionY, panel, panel);
+
+        g2.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g2.setColor(new Color(18, 20, 24, 180));
+        g2.drawLine(centroX, yRender + 4, centroX + oscilacionX, centroY - panel / 2);
+        g2.drawLine(centroX, centroY + panel / 2, centroX - oscilacionX, yRender + alto - 4);
+        g2.drawLine(x + 4, centroY, centroX - panel / 2 + oscilacionX, centroY + oscilacionY);
+        g2.drawLine(centroX + panel / 2, centroY, x + ancho - 4, centroY - oscilacionY);
+        g2.setStroke(previo);
+
         int panelExtra = Math.max(3, panel - 1);
+        g2.setColor(new Color(40, 42, 48, 220));
         g2.fillOval(x + 3 + faseSigno(anguloAnimacion), yRender + alto / 2 - panelExtra / 2, panelExtra, panelExtra);
         g2.fillOval(x + ancho - panelExtra - 3 - faseSigno(anguloAnimacion), yRender + alto / 2 - panelExtra / 2, panelExtra, panelExtra);
         g2.fillOval(centroX - panelExtra / 2, yRender + 2 + faseSigno(anguloAnimacion + Math.PI / 2.0), panelExtra, panelExtra);
         g2.fillOval(centroX - panelExtra / 2, yRender + alto - panelExtra - 2 - faseSigno(anguloAnimacion + Math.PI / 2.0), panelExtra, panelExtra);
-        g2.setColor(new Color(24, 24, 28, 150));
-        int fase = (int) Math.round((anguloAnimacion * 10.0) % 360.0);
-        g2.drawArc(x + 3, yRender + 4, ancho - 6, alto - 8, fase, 160);
-        g2.drawArc(x + 4, yRender + 5, ancho - 8, alto - 10, fase + 180, 140);
 
-        g2.setColor(new Color(255, 255, 255, 52));
-        g2.fillOval(x + 2, yRender + 2, Math.max(4, ancho - 6), Math.max(3, alto / 2));
+        // Arcos decorativos, menos intrusivos.
+        g2.setColor(new Color(24, 24, 28, 120));
+        int fase = (int) Math.round((anguloAnimacion * 10.0) % 360.0);
+        g2.drawArc(x + 4, yRender + 5, ancho - 8, alto - 10, fase, 140);
+        g2.drawArc(x + 6, yRender + 7, ancho - 12, alto - 14, fase + 170, 120);
+
+        // Brillo y reflejos: pequeño highlight con degradado para no cubrir paneles.
+        g2.setPaint(new GradientPaint(x + ancho * 0.12f, yRender + alto * 0.12f, new Color(255, 255, 255, 220), x + ancho * 0.32f, yRender + alto * 0.32f, new Color(255, 255, 255, 0)));
+        g2.fillOval(x + ancho / 6, yRender + alto / 8, Math.max(6, ancho / 4), Math.max(4, alto / 6));
+
         if (altura > 1.5) {
-            g2.setColor(new Color(220, 235, 255, 58));
+            g2.setColor(new Color(200, 220, 255, 48));
             g2.fillOval(x - 1, yRender - 1, ancho + 2, alto + 2);
         }
         if (rapidez > 3.2) {
-            g2.setColor(new Color(255, 244, 190, 96));
+            g2.setColor(new Color(255, 244, 190, 64));
             g2.drawOval(x - 1, yRender - 1, ancho + 2, alto + 2);
         }
-        g2.setColor(new Color(255, 255, 255, 168));
-        g2.fillOval(x + 3, yRender + 3, Math.max(4, ancho / 3), Math.max(3, alto / 4));
-        g2.setColor(new Color(255, 248, 220, 82));
-        g2.fillOval(x + ancho / 2 - 2, yRender + 4, Math.max(3, ancho / 6), Math.max(2, alto / 6));
+
+        // Pequeño punto especular cerca del borde superior
+        g2.setColor(new Color(255, 255, 255, 200));
+        g2.fillOval(x + 3, yRender + 3, Math.max(4, ancho / 6), Math.max(3, alto / 8));
         g2.dispose();
     }
 

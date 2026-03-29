@@ -8,6 +8,10 @@ public enum TipoSonido {
     BARRIDA,
     ROBO,
     SAQUE,
+    FALTA,
+    QUEJIDO,
+    TARJETA,
+    PENAL,
     GOL,
     VICTORIA,
     DERROTA

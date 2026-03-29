@@ -41,6 +41,10 @@ public final class GestorSprites {
     private final BufferedImage panelEvento;
     private final BufferedImage panelMenu;
     private final BufferedImage backdrop;
+    private final BufferedImage iconTarjetaAmarilla;
+    private final BufferedImage iconTarjetaRoja;
+    private final BufferedImage iconBota;
+    private final BufferedImage iconHidratacion;
 
     private GestorSprites() {
         jugadoresCache = new HashMap<>();
@@ -51,10 +55,15 @@ public final class GestorSprites {
         tileCesped = crearTileCesped();
         tileMuro = crearTileMuro();
         tileGrada = crearTileGrada();
-        panelHud = crearPanel(200, 84, new Color(20, 28, 42, 236), new Color(54, 72, 98, 236), new Color(255, 220, 120, 64));
-        panelEvento = crearPanel(320, 128, new Color(64, 34, 20, 236), new Color(220, 148, 72, 236), new Color(255, 244, 190, 92));
-        panelMenu = crearPanel(440, 300, new Color(18, 30, 40, 238), new Color(32, 88, 70, 238), new Color(110, 220, 255, 72));
+        // Panels using centralized HUD palette
+        panelHud = crearPanel(200, 84, mezclar(ConfiguracionJuego.HUD_PANEL, ConfiguracionJuego.HUD_BG, 0.06), mezclar(ConfiguracionJuego.HUD_PANEL, ConfiguracionJuego.HUD_BG, 0.18), mezclar(ConfiguracionJuego.HUD_ACCENT, ConfiguracionJuego.HUD_TEXT, 0.12));
+        panelEvento = crearPanel(320, 128, mezclar(ConfiguracionJuego.HUD_PANEL, ConfiguracionJuego.HUD_DANGER, 0.08), mezclar(ConfiguracionJuego.HUD_PANEL, ConfiguracionJuego.HUD_BG, 0.2), mezclar(ConfiguracionJuego.HUD_ACCENT, ConfiguracionJuego.HUD_TEXT, 0.18));
+        panelMenu = crearPanel(440, 300, mezclar(ConfiguracionJuego.HUD_PANEL, ConfiguracionJuego.HUD_BG, 0.02), mezclar(ConfiguracionJuego.HUD_PANEL, ConfiguracionJuego.HUD_ACCENT, 0.06), mezclar(ConfiguracionJuego.HUD_ACCENT, ConfiguracionJuego.HUD_TEXT, 0.28));
         backdrop = crearBackdrop();
+        iconTarjetaAmarilla = crearIconTarjeta(false);
+        iconTarjetaRoja = crearIconTarjeta(true);
+        iconBota = crearIconBota();
+        iconHidratacion = crearIconHidratacion();
     }
 
     public static GestorSprites getInstancia() {
@@ -84,9 +93,9 @@ public final class GestorSprites {
         int w = cancha.getCampoXMax() - cancha.getCampoXMin();
         int h = cancha.getCampoYMax() - cancha.getCampoYMin();
         rellenarTile(g, tileCesped, x, y, w, h);
-        g.setColor(new Color(12, 18, 16, 80));
+        g.setColor(new Color(0, 0, 0, 80));
         g.fillRoundRect(x - 8, y - 8, w + 16, h + 16, 18, 18);
-        g.setColor(new Color(240, 240, 232, 220));
+        g.setColor(ConfiguracionJuego.LINEA_CANCHA);
         g.drawRect(x, y, w, h);
         g.drawLine(cancha.getCentroX(), y, cancha.getCentroX(), y + h);
         g.drawOval(cancha.getCentroX() - cancha.getRadioCirculoCentral(), cancha.getCentroY() - cancha.getRadioCirculoCentral(),
@@ -95,18 +104,23 @@ public final class GestorSprites {
         dibujarArea(g, cancha.getAreaGrande(false));
         dibujarArea(g, cancha.getAreaChica(true));
         dibujarArea(g, cancha.getAreaChica(false));
+        g.setColor(ConfiguracionJuego.HUD_ACCENT);
         g.fillOval(cancha.getCentroX() - 4, cancha.getCentroY() - 4, 8, 8);
         g.fillOval(cancha.getPuntoPenalX(true) - 3, cancha.getPuntoPenalY() - 3, 6, 6);
         g.fillOval(cancha.getPuntoPenalX(false) - 3, cancha.getPuntoPenalY() - 3, 6, 6);
         int pulso = (int) Math.round(Math.abs(Math.sin(relojUI * 0.05)) * 22.0);
-        g.setColor(new Color(255, 216, 104, 60 + pulso));
+        Color glow = new Color(ConfiguracionJuego.HUD_ACCENT.getRed(), ConfiguracionJuego.HUD_ACCENT.getGreen(), ConfiguracionJuego.HUD_ACCENT.getBlue(), Math.max(40, 60 + pulso));
+        g.setColor(glow);
         g.drawRoundRect(x + 2, y + 2, w - 4, h - 4, 16, 16);
         dibujarPorteria(g, cancha, true);
         dibujarPorteria(g, cancha, false);
     }
 
     private void dibujarArea(Graphics2D g, java.awt.Rectangle rect) {
+        Color old = g.getColor();
+        g.setColor(ConfiguracionJuego.LINEA_CANCHA);
         g.drawRect(rect.x, rect.y, rect.width, rect.height);
+        g.setColor(old);
     }
 
     private void dibujarPorteria(Graphics2D g, GeometriaCancha cancha, boolean local) {
@@ -167,6 +181,74 @@ public final class GestorSprites {
         g.fillRoundRect(x + w - 18, y + 3, 14, 5, 4, 4);
         g.setColor(new Color(16, 24, 30));
         g.fillRoundRect(x + 4, y + h - 7, Math.max(8, Math.min(w - 24, hidratacion.getUsosRestantes() * 4)), 4, 4, 4);
+    }
+
+    public BufferedImage getIconTarjeta(boolean roja) {
+        return roja ? iconTarjetaRoja : iconTarjetaAmarilla;
+    }
+
+    public BufferedImage getIconBota() {
+        return iconBota;
+    }
+
+    public BufferedImage getIconHidratacion() {
+        return iconHidratacion;
+    }
+
+    private BufferedImage crearIconTarjeta(boolean roja) {
+        int w = 20, h = 30;
+        BufferedImage img = nuevaImagen(w, h);
+        Graphics2D g = img.createGraphics();
+        try {
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            Color fill = roja ? ConfiguracionJuego.HUD_DANGER : ConfiguracionJuego.HUD_WARN;
+            g.setColor(fill);
+            g.fillRoundRect(2, 2, w - 4, h - 4, 6, 6);
+            g.setColor(COLOR_OUTLINE);
+            g.setStroke(new java.awt.BasicStroke(1f));
+            g.drawRoundRect(2, 2, w - 4, h - 4, 6, 6);
+            g.setColor(new Color(255, 255, 255, 110));
+            g.fillRoundRect(w / 2 - 3, h / 2 - 6, 6, 12, 3, 3);
+        } finally {
+            g.dispose();
+        }
+        return img;
+    }
+
+    private BufferedImage crearIconBota() {
+        int w = 28, h = 18;
+        BufferedImage img = nuevaImagen(w, h);
+        Graphics2D g = img.createGraphics();
+        try {
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g.setColor(new Color(34, 36, 42));
+            g.fillRoundRect(2, 6, w - 6, h - 8, 6, 6);
+            g.setColor(new Color(220, 220, 220));
+            g.fillRect(w - 10, 4, 6, 4);
+            g.setColor(COLOR_SHOE);
+            g.fillOval(4, h - 6, 8, 6);
+        } finally {
+            g.dispose();
+        }
+        return img;
+    }
+
+    private BufferedImage crearIconHidratacion() {
+        int w = 16, h = 22;
+        BufferedImage img = nuevaImagen(w, h);
+        Graphics2D g = img.createGraphics();
+        try {
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g.setColor(new Color(88, 200, 240));
+            g.fillRoundRect(3, 3, w - 6, h - 8, 6, 6);
+            g.setColor(new Color(18, 24, 28));
+            g.fillRect(w / 2 - 2, 1, 4, 3);
+            g.setColor(new Color(255, 255, 255, 120));
+            g.fillOval(6, 6, 4, 4);
+        } finally {
+            g.dispose();
+        }
+        return img;
     }
 
     public void dibujarJugador(Graphics2D g, Jugador jugador) {
@@ -673,14 +755,17 @@ public final class GestorSprites {
 
     private BufferedImage crearTileCesped() {
         BufferedImage img = nuevaImagen(32, 32);
-        fillRect(img, 0, 0, 32, 32, new Color(56, 128, 68));
+        // Base de césped usando paleta desde ConfiguracionJuego
+        fillRect(img, 0, 0, 32, 32, ConfiguracionJuego.CESPED_A);
         for (int i = 0; i < 56; i++) {
             int x = (i * 7) % 31;
             int y = (i * 11) % 31;
-            fillRect(img, x, y, 1, 2, i % 2 == 0 ? new Color(78, 160, 84) : new Color(40, 104, 54));
+            Color c = i % 2 == 0 ? mezclar(ConfiguracionJuego.CESPED_A, ConfiguracionJuego.CESPED_B, 0.28) : mezclar(ConfiguracionJuego.CESPED_B, ConfiguracionJuego.CESPED_A, 0.12);
+            fillRect(img, x, y, 1, 2, c);
         }
         for (int i = 0; i < 14; i++) {
-            fillRect(img, 1 + (i * 5) % 30, 2 + (i * 9) % 28, 2, 1, new Color(96, 182, 88, 120));
+            Color glow = new Color(ConfiguracionJuego.CESPED_A.getRed(), ConfiguracionJuego.CESPED_A.getGreen(), ConfiguracionJuego.CESPED_A.getBlue(), 120);
+            fillRect(img, 1 + (i * 5) % 30, 2 + (i * 9) % 28, 2, 1, glow);
         }
         return img;
     }

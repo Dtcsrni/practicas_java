@@ -66,6 +66,7 @@ public class Jugador extends EntidadJuego {
     private int framesReaccionFinal;
     private boolean portero;
     private boolean arbitro;
+    private int framesHidratacion;
 
     public Jugador(int x, int y, int ancho, int alto, int velocidad) {
         // Atajo con nombre generico y paleta base.
@@ -120,6 +121,7 @@ public class Jugador extends EntidadJuego {
         this.framesReaccionFinal = 0;
         this.portero = false;
         this.arbitro = false;
+        this.framesHidratacion = 0;
     }
 
     public void mover(int dx, int dy) {
@@ -186,9 +188,9 @@ public class Jugador extends EntidadJuego {
         int zancada = (int) Math.round(pulsoComplemento * (corriendo ? 7.0 : 4.0));
         int inclinacionX = direccionX * Math.max(2, ancho / 8) + (corriendo ? direccionX * 2 : 0);
         int inclinacionY = direccionY * Math.max(1, alto / 12);
-        int cabezaTam = Math.max(8, ancho / 3);
-        int torsoW = Math.max(11, (int) Math.round(ancho * 0.52));
-        int torsoH = Math.max(14, (int) Math.round(alto * 0.42));
+        int cabezaTam = calcCabeza(ancho);
+        int torsoW = calcTorsoW(ancho);
+        int torsoH = calcTorsoH(alto);
         int torsoX = x + (ancho - torsoW) / 2;
         int torsoY = y + cabezaTam - 1 + oscilacion + (agotado ? 2 : 0);
         int caderaY = torsoY + torsoH - 2;
@@ -293,15 +295,7 @@ public class Jugador extends EntidadJuego {
             g2.fillOval(cabezaX + cabezaTam - 4, cabezaY + cabezaTam / 2, 3, 7);
         }
 
-        double energia = staminaMax > 0.0 ? Math.max(0.0, Math.min(1.0, stamina / staminaMax)) : 0.0;
-        Color barraEnergia = energia > 0.55 ? new Color(88, 220, 120) : (energia > 0.25 ? new Color(255, 198, 80) : new Color(255, 104, 84));
-        int barraY = y + alto + 2;
-        int barraAncho = Math.max(10, ancho - 4);
-        int relleno = (int) Math.round(barraAncho * energia);
-        g2.setColor(new Color(0, 0, 0, 120));
-        g2.fillRoundRect(x + 2, barraY, barraAncho, 4, 4, 4);
-        g2.setColor(barraEnergia);
-        g2.fillRoundRect(x + 2, barraY, Math.max(2, relleno), 4, 4, 4);
+        dibujarBarraEnergia(g2, x + 2, y + alto + 4, Math.max(10, ancho - 4));
 
         g2.dispose();
     }
@@ -309,9 +303,9 @@ public class Jugador extends EntidadJuego {
     public void dibujarFiguraEvento(Graphics2D g2, int x, int y, int w, int h, boolean celebrar) {
         Graphics2D g = (Graphics2D) g2.create();
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        int cabezaTam = Math.max(16, w / 3);
-        int torsoW = Math.max(24, (int) Math.round(w * 0.50));
-        int torsoH = Math.max(28, (int) Math.round(h * 0.38));
+        int cabezaTam = Math.max(12, calcCabeza(w));
+        int torsoW = Math.max(16, calcTorsoW(w));
+        int torsoH = Math.max(14, calcTorsoH(h));
         int torsoX = x + (w - torsoW) / 2;
         int torsoY = y + cabezaTam + 2;
         int cabezaX = x + (w - cabezaTam) / 2;
@@ -430,6 +424,33 @@ public class Jugador extends EntidadJuego {
         );
     }
 
+    private int calcCabeza(int w) {
+        return Math.max(8, w / 4);
+    }
+
+    private int calcTorsoW(int w) {
+        return Math.max(11, (int) Math.round(w * 0.58));
+    }
+
+    private int calcTorsoH(int h) {
+        return Math.max(14, (int) Math.round(h * 0.46));
+    }
+
+    private void dibujarBarraEnergia(Graphics2D g2, int barraX, int barraY, int barraAncho) {
+        double energia = staminaMax > 0.0 ? Math.max(0.0, Math.min(1.0, stamina / staminaMax)) : 0.0;
+        Color barraColor = energia > 0.66 ? new Color(72, 200, 120) : (energia > 0.33 ? new Color(255, 198, 80) : new Color(255, 96, 88));
+        int barraAltura = 8;
+        g2.setColor(new Color(0, 0, 0, 160));
+        g2.fillRoundRect(barraX - 1, barraY - 1, barraAncho + 2, barraAltura + 2, barraAltura, barraAltura);
+        g2.setColor(new Color(40, 40, 44, 200));
+        g2.fillRoundRect(barraX, barraY, barraAncho, barraAltura, barraAltura - 2, barraAltura - 2);
+        int relleno = (int) Math.round(barraAncho * energia);
+        g2.setColor(barraColor);
+        g2.fillRoundRect(barraX, barraY, Math.max(2, relleno), barraAltura, barraAltura - 2, barraAltura - 2);
+        g2.setColor(new Color(0, 0, 0, 120));
+        g2.drawRoundRect(barraX, barraY, barraAncho, barraAltura, barraAltura - 2, barraAltura - 2);
+    }
+
     private void dibujarExpresionFacial(Graphics2D g2, int cabezaX, int cabezaY, int cabezaTam, boolean emocionAlta, boolean retrato) {
         int ojoY = cabezaY + cabezaTam / 2 - 1;
         int ojoIzqX = cabezaX + cabezaTam / 3 - 2;
@@ -490,11 +511,11 @@ public class Jugador extends EntidadJuego {
         g2.setColor(new Color(176, 176, 176, 88));
         g2.fillRoundRect(estelaX - 6, estelaY + 4, 10 + arrastre / 2, 4, 4, 4);
 
-        int cuerpoW = Math.max(18, (int) Math.round(ancho * 0.88));
-        int cuerpoH = Math.max(13, (int) Math.round(alto * 0.28));
+        int cuerpoW = calcTorsoW(ancho);
+        int cuerpoH = calcTorsoH(alto);
         int cuerpoX = x + (ancho - cuerpoW) / 2 + (int) Math.round(dirX * 4.0);
         int cuerpoY = y + alto - cuerpoH - 12 + (int) Math.round(dirY * 2.0);
-        int cabezaTam = Math.max(8, ancho / 3);
+        int cabezaTam = calcCabeza(ancho);
         int cabezaX = cuerpoX + (dirX >= 0 ? cuerpoW - cabezaTam / 2 : -cabezaTam / 2);
         int cabezaY = cuerpoY - cabezaTam / 2 - 1;
 
@@ -525,15 +546,9 @@ public class Jugador extends EntidadJuego {
         dibujarPierna(g2, caderaX, caderaY, caderaX + (int) Math.round(dirX * 10.0), y + alto - 14, caderaX + (int) Math.round(dirX * 18.0), y + alto - 7, colorDetalle.darker(), colorDetalle);
         dibujarPierna(g2, caderaX - (int) Math.round(dirX * 4.0), caderaY, caderaX - (int) Math.round(dirX * 9.0), y + alto - 10, caderaX - (int) Math.round(dirX * 16.0), y + alto - 3, colorDetalle.darker(), colorDetalle);
 
-        double energia = staminaMax > 0.0 ? Math.max(0.0, Math.min(1.0, stamina / staminaMax)) : 0.0;
-        Color barraEnergia = energia > 0.55 ? new Color(88, 220, 120) : (energia > 0.25 ? new Color(255, 198, 80) : new Color(255, 104, 84));
-        int barraY = y + alto + 2;
+        int barraY = y + alto + 4;
         int barraAncho = Math.max(10, ancho - 4);
-        int relleno = (int) Math.round(barraAncho * energia);
-        g2.setColor(new Color(0, 0, 0, 120));
-        g2.fillRoundRect(x + 2, barraY, barraAncho, 4, 4, 4);
-        g2.setColor(barraEnergia);
-        g2.fillRoundRect(x + 2, barraY, Math.max(2, relleno), 4, 4, 4);
+        dibujarBarraEnergia(g2, x + 2, barraY, barraAncho);
     }
 
     private void dibujarLanzada(Graphics2D g2) {
@@ -556,11 +571,11 @@ public class Jugador extends EntidadJuego {
         g2.setColor(new Color(0, 0, 0, 64));
         g2.fillOval(sombraX, sombraY, sombraW, 8);
 
-        int cuerpoW = Math.max(22, (int) Math.round(ancho * 1.02));
-        int cuerpoH = Math.max(14, (int) Math.round(alto * 0.30));
+        int cuerpoW = calcTorsoW(ancho);
+        int cuerpoH = calcTorsoH(alto);
         int cuerpoX = x + (ancho - cuerpoW) / 2 + (int) Math.round(dirX * 8.0);
         int cuerpoY = y + alto - cuerpoH - 17 + (int) Math.round(dirY * 4.0);
-        int cabezaTam = Math.max(9, ancho / 3);
+        int cabezaTam = calcCabeza(ancho);
         double angulo = Math.toRadians(32.0 * dirX + 10.0 * dirY);
 
         g2.rotate(angulo, cuerpoX + cuerpoW / 2.0, cuerpoY + cuerpoH / 2.0);
@@ -593,15 +608,9 @@ public class Jugador extends EntidadJuego {
         g2.setColor(new Color(120, 210, 255, 90));
         g2.fillRoundRect(sombraX - 4, sombraY - 4, Math.max(10, sombraW / 2), 4, 4, 4);
 
-        double energia = staminaMax > 0.0 ? Math.max(0.0, Math.min(1.0, stamina / staminaMax)) : 0.0;
-        Color barraEnergia = energia > 0.55 ? new Color(88, 220, 120) : (energia > 0.25 ? new Color(255, 198, 80) : new Color(255, 104, 84));
-        int barraY = y + alto + 2;
+        int barraY = y + alto + 4;
         int barraAncho = Math.max(10, ancho - 4);
-        int relleno = (int) Math.round(barraAncho * energia);
-        g2.setColor(new Color(0, 0, 0, 120));
-        g2.fillRoundRect(x + 2, barraY, barraAncho, 4, 4, 4);
-        g2.setColor(barraEnergia);
-        g2.fillRoundRect(x + 2, barraY, Math.max(2, relleno), 4, 4, 4);
+        dibujarBarraEnergia(g2, x + 2, barraY, barraAncho);
     }
 
     private void dibujarDerribado(Graphics2D g2) {
@@ -621,8 +630,8 @@ public class Jugador extends EntidadJuego {
         g2.setColor(new Color(0, 0, 0, 62));
         g2.fillOval(sombraX, sombraY, sombraW, 8);
 
-        int cuerpoW = Math.max(20, (int) Math.round(ancho * 0.92));
-        int cuerpoH = Math.max(14, (int) Math.round(alto * 0.28));
+        int cuerpoW = calcTorsoW(ancho);
+        int cuerpoH = calcTorsoH(alto);
         int cuerpoX = x + (ancho - cuerpoW) / 2;
         int cuerpoY = y + alto - cuerpoH - 12;
         double angulo = Math.toRadians(12.0 * dirX);
@@ -639,7 +648,7 @@ public class Jugador extends EntidadJuego {
         dibujarPierna(g2, cuerpoX + cuerpoW * 2 / 3, cuerpoY + cuerpoH - 1, cuerpoX + cuerpoW * 2 / 3 + 5, y + alto - 10, cuerpoX + cuerpoW * 2 / 3 + 12, y + alto - 5, colorDetalle.darker(), colorDetalle);
         g2.rotate(-angulo, cuerpoX + cuerpoW / 2.0, cuerpoY + cuerpoH / 2.0);
 
-        int cabezaTam = Math.max(9, ancho / 3);
+        int cabezaTam = calcCabeza(ancho);
         int cabezaX = cuerpoX + cuerpoW - cabezaTam / 2;
         int cabezaY = cuerpoY - cabezaTam / 2;
         g2.setPaint(new GradientPaint(cabezaX, cabezaY, new Color(255, 228, 186), cabezaX, cabezaY + cabezaTam, new Color(236, 188, 148)));
@@ -652,15 +661,9 @@ public class Jugador extends EntidadJuego {
             g2.fillOval(x - 4, y + alto - 16, ancho + 8, 18);
         }
 
-        double energia = staminaMax > 0.0 ? Math.max(0.0, Math.min(1.0, stamina / staminaMax)) : 0.0;
-        Color barraEnergia = energia > 0.55 ? new Color(88, 220, 120) : (energia > 0.25 ? new Color(255, 198, 80) : new Color(255, 104, 84));
-        int barraY = y + alto + 2;
+        int barraY = y + alto + 4;
         int barraAncho = Math.max(10, ancho - 4);
-        int relleno = (int) Math.round(barraAncho * energia);
-        g2.setColor(new Color(0, 0, 0, 120));
-        g2.fillRoundRect(x + 2, barraY, barraAncho, 4, 4, 4);
-        g2.setColor(barraEnergia);
-        g2.fillRoundRect(x + 2, barraY, Math.max(2, relleno), 4, 4, 4);
+        dibujarBarraEnergia(g2, x + 2, barraY, barraAncho);
     }
 
     private void dibujarCelebracionFinal(Graphics2D g2) {
@@ -676,9 +679,9 @@ public class Jugador extends EntidadJuego {
         int salto = (int) Math.round(Math.abs(Math.sin(frameCelebracion * 0.22)) * 10.0);
         int rebote = (int) Math.round(Math.sin(frameCelebracion * 0.22) * 2.0);
         int baseY = y - salto;
-        int cabezaTam = Math.max(8, ancho / 3);
-        int torsoW = Math.max(11, (int) Math.round(ancho * 0.52));
-        int torsoH = Math.max(14, (int) Math.round(alto * 0.42));
+        int cabezaTam = calcCabeza(ancho);
+        int torsoW = calcTorsoW(ancho);
+        int torsoH = calcTorsoH(alto);
         int torsoX = x + (ancho - torsoW) / 2;
         int torsoY = baseY + cabezaTam + rebote;
         int cabezaX = x + (ancho - cabezaTam) / 2;
@@ -727,8 +730,8 @@ public class Jugador extends EntidadJuego {
         g2.setColor(new Color(0, 0, 0, 62));
         g2.fillOval(sombraX, sombraY, sombraW, 8);
 
-        int cuerpoW = Math.max(20, (int) Math.round(ancho * 0.92));
-        int cuerpoH = Math.max(14, (int) Math.round(alto * 0.28));
+        int cuerpoW = calcTorsoW(ancho);
+        int cuerpoH = calcTorsoH(alto);
         int cuerpoX = x + (ancho - cuerpoW) / 2;
         int cuerpoY = y + alto - cuerpoH - 12;
         g2.rotate(Math.toRadians(10.0), cuerpoX + cuerpoW / 2.0, cuerpoY + cuerpoH / 2.0);
@@ -747,7 +750,7 @@ public class Jugador extends EntidadJuego {
         g2.drawLine(cuerpoX + cuerpoW * 2 / 3, cuerpoY + cuerpoH - 1, cuerpoX + cuerpoW * 2 / 3 + 12, y + alto - 5);
         g2.rotate(Math.toRadians(-10.0), cuerpoX + cuerpoW / 2.0, cuerpoY + cuerpoH / 2.0);
 
-        int cabezaTam = Math.max(9, ancho / 3);
+        int cabezaTam = calcCabeza(ancho);
         int cabezaX = cuerpoX + cuerpoW - cabezaTam / 2;
         int cabezaY = cuerpoY - cabezaTam / 2 + sollozo;
         g2.setPaint(new GradientPaint(cabezaX, cabezaY, new Color(255, 228, 186), cabezaX, cabezaY + cabezaTam, new Color(236, 188, 148)));
@@ -796,6 +799,15 @@ public class Jugador extends EntidadJuego {
         if (framesPatadaVisual > 0) {
             framesPatadaVisual--;
         }
+        if (framesHidratacion > 0) {
+            framesHidratacion = Math.max(0, framesHidratacion - 1);
+            sprintVisualActivo = false;
+            intensidadMovimientoVisual = 0;
+            if (agotado && stamina >= 34.0) {
+                agotado = false;
+            }
+            return;
+        }
         if (celebracionFinalActiva || derrotaFinalActiva) {
             framesReaccionFinal++;
         } else {
@@ -804,14 +816,14 @@ public class Jugador extends EntidadJuego {
 
         boolean moviendose = intensidadMovimiento > 0;
         if (sprintando && moviendose && !agotado) {
-            // Menor consumo por sprint para que los jugadores no se agoten tan rapido
-            stamina = Math.max(0.0, stamina - 0.36);
+            // Menor consumo por sprint — jugadores se cansan más despacio
+            stamina = Math.max(0.0, stamina - 0.24);
             if (stamina <= 0.0) {
                 agotado = true;
             }
         } else {
             // Recuperacion aumentada cuando no sprintan o en reposo
-            double recuperacion = moviendose ? 0.36 : 1.00;
+            double recuperacion = moviendose ? 0.48 : 1.20;
             stamina = Math.min(staminaMax, stamina + recuperacion);
             if (agotado && stamina >= 34.0) {
                 agotado = false;
@@ -916,6 +928,17 @@ public class Jugador extends EntidadJuego {
         if (agotado && stamina >= 34.0) {
             agotado = false;
         }
+    }
+
+    public void iniciarHidratacion(int duracionFrames) {
+        framesHidratacion = Math.max(framesHidratacion, Math.max(0, duracionFrames));
+        if (agotado && stamina >= 34.0) {
+            agotado = false;
+        }
+    }
+
+    public boolean estaHidratando() {
+        return framesHidratacion > 0;
     }
 
     public void gastarStamina(double cantidad) {

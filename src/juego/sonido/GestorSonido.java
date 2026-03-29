@@ -75,6 +75,23 @@ public class GestorSonido {
                 tono(523.25, 85, 0.11, 150.0, Forma.TRIANGULAR),
                 tono(698.46, 170, 0.13, 235.0, Forma.SIERRA_SUAVE)
             };
+            case FALTA -> new Capa[] {
+                silbato(920.0, 1100.0, 120, 0.18, 0.0),
+                ruido(120, 0.06, 0.0, 0.24)
+            };
+            case QUEJIDO -> new Capa[] {
+                tonoDeslizante(660.0, 320.0, 180, 0.14, 0.0, Forma.SENO),
+                ruido(80, 0.04, 0.0, 0.34)
+            };
+            case TARJETA -> new Capa[] {
+                silbato(1500.0, 1620.0, 90, 0.20, 0.0),
+                tono(880.0, 60, 0.12, 0.0, Forma.TRIANGULAR)
+            };
+            case PENAL -> new Capa[] {
+                tonoDeslizante(240.0, 880.0, 260, 0.09, 0.0, Forma.SIERRA_SUAVE),
+                golpeBalon(140.0 + variar(-8.0, 8.0), 110, 0.22, 160.0),
+                aire(760.0, 360.0, 120, 0.06, 14.0)
+            };
             case VICTORIA -> new Capa[] {
                 tono(523.25, 85, 0.10, 0.0, Forma.TRIANGULAR),
                 tono(659.25, 85, 0.11, 90.0, Forma.TRIANGULAR),
